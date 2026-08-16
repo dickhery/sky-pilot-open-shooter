@@ -1,0 +1,15 @@
+Sky Pilot route soundtracks.
+
+Created with Suno AI. Used as in-flight music for each weather pair.
+
+Daytime
+  Morning Coastal Hop  — Protocol_Runway_Daytime.mp3
+  Midday Crosswind Run — Protocol_Runway_Daytime_2.mp3
+
+Nighttime
+  Midnight Harbor Approach — Night_Flight_Protocol.mp3
+  Night Express            — Fly_All_Night.mp3
+
+Partly cloudy
+  Cloudy Valley Tour — Rainy_Sky_Protocol_1.mp3
+  Storm Front Sprint — Rainy_Sky_Protocol_2.mp3

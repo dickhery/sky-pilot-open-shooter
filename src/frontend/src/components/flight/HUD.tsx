@@ -1,0 +1,425 @@
+import {
+  APPROACH_SPEED_KTS,
+  type LandingHint,
+  ROTATE_SPEED_KTS,
+} from "@/components/flight/flightPhysics";
+import type { FlightPhase } from "@/types/game";
+import {
+  CheckCircle2,
+  Circle,
+  Compass,
+  Gauge,
+  Keyboard,
+  Mountain,
+  Music,
+  Music2,
+  Navigation,
+  TriangleAlert,
+} from "lucide-react";
+
+interface HUDProps {
+  altitude: number;
+  airspeed: number;
+  heading: number;
+  verticalSpeed: number;
+  airborne: boolean;
+  phase: FlightPhase;
+  missionStep: number;
+  objective: string;
+  subObjective?: string;
+  landingHint: LandingHint;
+  nextWaypoint: {
+    name: string;
+    distance: number;
+    bearing: number;
+    kind?: "gate" | "runway";
+    index?: number;
+    total?: number;
+  } | null;
+  throttlePct: number;
+  brakesOn: boolean;
+  cockpitView: boolean;
+  onToggleCockpit: () => void;
+  musicOn: boolean;
+  onToggleMusic: () => void;
+}
+
+const MISSION_STEPS = [
+  { phase: "takeoff", label: "Take off" },
+  { phase: "cruising", label: "Gates" },
+  { phase: "landing", label: "Approach" },
+  { phase: "rollout", label: "Land" },
+] as const;
+
+const HINT_MESSAGES: Record<NonNullable<LandingHint>, string> = {
+  brake_to_finish: "Touchdown! Hold brake / Space below 20 kt to finish",
+  gate_cleared: "Gate cleared — fly through the next ring",
+};
+
+export function HUD({
+  altitude,
+  airspeed,
+  heading,
+  verticalSpeed,
+  airborne,
+  phase,
+  missionStep,
+  objective,
+  subObjective,
+  landingHint,
+  nextWaypoint,
+  throttlePct,
+  brakesOn,
+  cockpitView,
+  onToggleCockpit,
+  musicOn,
+  onToggleMusic,
+}: HUDProps) {
+  const phaseLabel: Record<FlightPhase, string> = {
+    idle: "Standby",
+    takeoff: "Takeoff",
+    cruising: "Cruise",
+    landing: "Approach",
+    rollout: "Rollout",
+    complete: "Complete",
+    crashed: "Crashed",
+  };
+
+  const headingStr = `${Math.round(((heading % 360) + 360) % 360)
+    .toString()
+    .padStart(3, "0")}°`;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20 select-none font-mono text-primary">
+      {/* Top-center: mission progress + objective */}
+      <div className="absolute left-1/2 top-2 flex w-[min(100%,36rem)] -translate-x-1/2 flex-col items-center gap-1 px-2 sm:top-4 sm:gap-1.5">
+        {nextWaypoint && phase !== "crashed" && phase !== "complete" && (
+          <NavArrow heading={heading} bearing={nextWaypoint.bearing} />
+        )}
+        <div
+          className="hud-scanlines glow-instrument flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-md border border-primary/50 bg-black/70 px-2 py-1 backdrop-blur sm:gap-3 sm:px-4 sm:py-1.5"
+          data-ocid="flight.hud.mission"
+        >
+          {MISSION_STEPS.map((step, i) => {
+            const stepNum = i + 1;
+            const done = missionStep > stepNum;
+            const active =
+              missionStep === stepNum ||
+              (phase === "complete" && stepNum === 4);
+            return (
+              <div key={step.phase} className="flex items-center gap-1">
+                {done ? (
+                  <CheckCircle2
+                    className="h-3 w-3 text-primary"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Circle
+                    className={`h-3 w-3 ${active ? "text-accent" : "text-muted-foreground/50"}`}
+                    aria-hidden="true"
+                  />
+                )}
+                <span
+                  className={`hud-label hidden text-[9px] sm:inline ${active ? "font-bold text-accent" : done ? "text-primary" : "text-muted-foreground"}`}
+                >
+                  {step.label}
+                </span>
+                {i < MISSION_STEPS.length - 1 && (
+                  <span className="mx-0.5 text-muted-foreground/40">›</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div
+          className="hud-scanlines flex max-w-full flex-col items-center gap-0.5 rounded-md border border-accent/50 bg-black/70 px-2 py-1 text-center backdrop-blur sm:px-4 sm:py-1.5"
+          data-ocid="flight.hud.objective"
+        >
+          <div className="flex items-center gap-2">
+            <span className="hud-label text-[10px] text-muted-foreground">
+              {phaseLabel[phase]}
+            </span>
+            <Navigation
+              className="h-3.5 w-3.5 text-accent"
+              aria-hidden="true"
+            />
+            <span className="hud-label text-[11px] font-bold text-accent">
+              {objective}
+            </span>
+          </div>
+          {subObjective && (
+            <span className="hud-label text-[10px] text-muted-foreground">
+              {subObjective}
+            </span>
+          )}
+        </div>
+
+        {landingHint && (
+          <div className="glow-caution hud-scanlines flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-3 py-1.5 backdrop-blur">
+            <TriangleAlert
+              className="h-3.5 w-3.5 shrink-0 text-accent"
+              aria-hidden="true"
+            />
+            <span className="hud-label text-[10px] text-accent">
+              {HINT_MESSAGES[landingHint]}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Top-left: instruments */}
+      <div className="absolute left-2 top-[7.5rem] flex flex-col gap-1.5 sm:left-4 sm:top-4 sm:gap-2">
+        <Instrument
+          icon={<Mountain className="h-4 w-4" aria-hidden="true" />}
+          label="ALT"
+          value={`${Math.max(0, Math.round(altitude))}`}
+          unit="ft"
+          dataOcid="flight.hud.altitude"
+        />
+        <Instrument
+          icon={<Gauge className="h-4 w-4" aria-hidden="true" />}
+          label="SPD"
+          value={`${Math.max(0, Math.round(airspeed))}`}
+          unit="kt"
+          dataOcid="flight.hud.airspeed"
+        />
+        <Instrument
+          icon={<Compass className="h-4 w-4" aria-hidden="true" />}
+          label="HDG"
+          value={headingStr}
+          unit=""
+          dataOcid="flight.hud.heading"
+        />
+        {airborne && (
+          <Instrument
+            icon={<Navigation className="h-4 w-4" aria-hidden="true" />}
+            label="V/S"
+            value={`${verticalSpeed >= 0 ? "+" : ""}${Math.round(verticalSpeed)}`}
+            unit="fpm"
+            dataOcid="flight.hud.vertical_speed"
+          />
+        )}
+        {phase === "takeoff" &&
+          !airborne &&
+          airspeed >= ROTATE_SPEED_KTS - 8 && (
+            <div className="glow-caution hud-scanlines flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-2.5 py-1.5 backdrop-blur">
+              <TriangleAlert
+                className="h-3.5 w-3.5 text-accent"
+                aria-hidden="true"
+              />
+              <span className="hud-label text-[10px] text-accent">
+                Rotate — pull up
+              </span>
+            </div>
+          )}
+        {phase === "landing" &&
+          airborne &&
+          airspeed > APPROACH_SPEED_KTS + 15 && (
+            <div className="glow-caution hud-scanlines flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-2.5 py-1.5 backdrop-blur">
+              <TriangleAlert
+                className="h-3.5 w-3.5 text-accent"
+                aria-hidden="true"
+              />
+              <span className="hud-label text-[10px] text-accent">
+                Slow to {APPROACH_SPEED_KTS} kt before landing
+              </span>
+            </div>
+          )}
+      </div>
+
+      {/* Top-right: throttle + brakes */}
+      <div className="absolute right-2 top-[7.5rem] flex flex-col gap-2 sm:right-4 sm:top-4">
+        <div
+          className="hud-scanlines glow-instrument hidden w-40 rounded-md border border-primary/50 bg-black/70 p-2 backdrop-blur md:block"
+          data-ocid="flight.hud.throttle"
+        >
+          <div className="flex items-center justify-between">
+            <span className="hud-label text-[10px] text-muted-foreground">
+              Throttle
+            </span>
+            <span className="hud-label hud-readout text-xs font-bold">
+              {throttlePct}%
+            </span>
+          </div>
+          <div className="mt-1.5 h-2 w-full overflow-hidden rounded-sm bg-secondary">
+            <div
+              className="h-full bg-primary transition-[width] duration-100"
+              style={{ width: `${throttlePct}%` }}
+            />
+          </div>
+        </div>
+        {brakesOn && (
+          <div
+            className="glow-caution hud-scanlines flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-2.5 py-1.5 backdrop-blur"
+            data-ocid="flight.hud.brakes"
+          >
+            <TriangleAlert
+              className="h-3.5 w-3.5 text-accent"
+              aria-hidden="true"
+            />
+            <span className="hud-label text-[10px] text-accent">Brakes</span>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom-center: navigation */}
+      {nextWaypoint && (
+        <div
+          className="hud-scanlines glow-instrument absolute bottom-36 left-1/2 flex w-[min(100%-1rem,24rem)] -translate-x-1/2 items-center justify-center gap-2 rounded-md border border-primary/50 bg-black/70 px-2 py-1.5 backdrop-blur sm:bottom-24 sm:w-auto sm:gap-4 sm:px-4 sm:py-2"
+          data-ocid="flight.hud.waypoint"
+        >
+          <div className="flex flex-col">
+            <span className="hud-label text-[9px] text-muted-foreground">
+              {nextWaypoint.kind === "gate"
+                ? `Fly through ${nextWaypoint.index ?? 0}/${nextWaypoint.total ?? 0}`
+                : phase === "landing" || phase === "rollout"
+                  ? "Landing Runway"
+                  : "Navigate To"}
+            </span>
+            <span className="hud-label hud-readout text-sm font-bold">
+              {nextWaypoint.name}
+            </span>
+          </div>
+          <div className="h-8 w-px bg-border" />
+          <div className="flex flex-col">
+            <span className="hud-label text-[9px] text-muted-foreground">
+              Distance
+            </span>
+            <span className="hud-label hud-readout text-sm font-bold">
+              {Math.max(0, nextWaypoint.distance).toFixed(1)} nm
+            </span>
+          </div>
+          <div className="h-8 w-px bg-border" />
+          <div className="flex flex-col">
+            <span className="hud-label text-[9px] text-muted-foreground">
+              Bearing
+            </span>
+            <span className="hud-label hud-readout text-sm font-bold">
+              {Math.round(((nextWaypoint.bearing % 360) + 360) % 360)
+                .toString()
+                .padStart(3, "0")}
+              °
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom-right: controls */}
+      <div
+        className="hud-scanlines absolute bottom-4 right-4 hidden rounded-md border border-primary/40 bg-black/70 p-3 backdrop-blur md:block"
+        data-ocid="flight.hud.controls"
+      >
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <Keyboard
+            className="h-3.5 w-3.5 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span className="hud-label text-[9px] text-muted-foreground">
+            Controls
+          </span>
+        </div>
+        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+          <Key>W / S</Key>
+          <span>Pitch up / down</span>
+          <Key>A / D</Key>
+          <span>Turn (bank)</span>
+          <Key>Shift</Key>
+          <span>More power</span>
+          <Key>Ctrl</Key>
+          <span>Less power</span>
+          <Key>Space</Key>
+          <span>Brakes</span>
+          <Key>C</Key>
+          <span>Cockpit / chase</span>
+          <Key>M</Key>
+          <span>Music on / off</span>
+        </div>
+        <button
+          type="button"
+          className="pointer-events-auto mt-2 w-full rounded-sm border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] text-primary"
+          onClick={onToggleCockpit}
+          data-ocid="flight.hud.view_toggle"
+        >
+          {cockpitView ? "Chase camera" : "Cockpit view"}
+        </button>
+        <button
+          type="button"
+          className="pointer-events-auto mt-1 flex w-full items-center justify-center gap-1 rounded-sm border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] text-primary"
+          onClick={onToggleMusic}
+          data-ocid="flight.hud.music_toggle"
+        >
+          {musicOn ? (
+            <Music2 className="h-3 w-3" aria-hidden="true" />
+          ) : (
+            <Music className="h-3 w-3 opacity-50" aria-hidden="true" />
+          )}
+          {musicOn ? "Music on" : "Music off"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NavArrow({ heading, bearing }: { heading: number; bearing: number }) {
+  const rel = ((((bearing - heading + 540) % 360) + 360) % 360) - 180;
+  return (
+    <div
+      className="flex flex-col items-center gap-0.5"
+      data-ocid="flight.hud.nav_arrow"
+    >
+      <div
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-accent/60 bg-card/80 text-accent shadow-instrument-glow"
+        style={{ transform: `rotate(${rel}deg)` }}
+        aria-hidden="true"
+      >
+        <Navigation className="h-5 w-5" />
+      </div>
+      <span className="hud-label text-[9px] text-accent">Next gate</span>
+    </div>
+  );
+}
+
+function Instrument({
+  icon,
+  label,
+  value,
+  unit,
+  dataOcid,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  unit: string;
+  dataOcid: string;
+}) {
+  return (
+    <div
+      className="hud-scanlines glow-instrument flex w-[6.5rem] items-center gap-1.5 rounded-md border border-primary/50 bg-black/70 px-1.5 py-1 backdrop-blur sm:w-36 sm:gap-2.5 sm:px-2.5 sm:py-1.5"
+      data-ocid={dataOcid}
+    >
+      <span className="text-primary">{icon}</span>
+      <div className="flex flex-1 flex-col leading-none">
+        <span className="hud-label text-[9px] text-muted-foreground">
+          {label}
+        </span>
+        <span className="flex items-baseline gap-1">
+          <span className="hud-readout text-base font-bold">{value}</span>
+          {unit && (
+            <span className="hud-label text-[9px] text-muted-foreground">
+              {unit}
+            </span>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Key({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="hud-label inline-flex items-center justify-center rounded-sm border border-border bg-secondary px-1.5 py-0.5 text-[9px] font-bold text-foreground">
+      {children}
+    </kbd>
+  );
+}
