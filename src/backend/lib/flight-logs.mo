@@ -13,6 +13,8 @@ module {
 
   /// Hard cap so one principal cannot grow the canister without bound.
   public let maxLogsPerPlayer : Nat = 20;
+  /// Global cap so many principals cannot fill the heap either.
+  public let maxLogsTotal : Nat = 400;
   public let maxPlanNameChars : Nat = 48;
 
   /// List all flight logs belonging to the given player, newest first.
@@ -20,6 +22,9 @@ module {
     logs : List.List<FlightLog>,
     playerId : PlayerId,
   ) : [FlightLogView] {
+    if (playerId.isAnonymous()) {
+      return [];
+    };
     let owned = logs.filter(func(log) { Principal.equal(log.playerId, playerId) });
     owned.reverse().toArray();
   };
@@ -60,6 +65,7 @@ module {
     };
 
     evictOldestIfCapped(logs, playerId);
+    evictOldestGlobalIfCapped(logs);
 
     let id = nextId.value;
     nextId.value := id + 1;
@@ -89,6 +95,22 @@ module {
     for (log in snapshot.values()) {
       if (not dropped and Principal.equal(log.playerId, playerId)) {
         dropped := true;
+      } else {
+        logs.add(log);
+      };
+    };
+  };
+
+  func evictOldestGlobalIfCapped(logs : List.List<FlightLog>) {
+    if (logs.size() < maxLogsTotal) {
+      return;
+    };
+    let snapshot = logs.toArray();
+    logs.clear();
+    var skipped = false;
+    for (log in snapshot.values()) {
+      if (not skipped) {
+        skipped := true;
       } else {
         logs.add(log);
       };

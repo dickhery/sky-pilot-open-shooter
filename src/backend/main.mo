@@ -23,4 +23,54 @@ actor {
   include FlightLogsApi(flightLogs, nextLogId);
   include FlightPlansApi();
   include LeaderboardApi(leaderboard, nextLeaderboardId);
+
+  /// Reject anonymous writers before Candid decode. Not a security
+  /// boundary — methods still check the caller. II start/finish stay open.
+  system func inspect(
+    {
+      caller : Principal;
+      msg : {
+        #recordFlightLog : () -> (
+          Int,
+          Text,
+          FlightLogsTypes.Plane,
+          FlightLogsTypes.Weather,
+          FlightLogsTypes.ScoreBreakdown,
+        );
+        #submitLeaderboardScore : () -> (
+          Text,
+          Text,
+          FlightLogsTypes.Plane,
+          FlightLogsTypes.Weather,
+          Nat,
+        );
+        #assignCallerUserRole : () -> (Principal, AccessControl.UserRole);
+        #_initialize_access_control : () -> ();
+        #_internet_identity_sign_in_start : () -> ();
+        #_internet_identity_sign_in_finish : () -> ();
+        #listFlightLogs : () -> ();
+        #getFlightLog : () -> FlightLogsTypes.LogId;
+        #listFlightPlans : () -> ();
+        #getFlightPlan : () -> Nat;
+        #listPlanes : () -> ();
+        #listWeather : () -> ();
+        #listLeaderboard : () -> ();
+        #getCallerUserRole : () -> ();
+        #isCallerAdmin : () -> ();
+        #__accessControlState : () -> ();
+        #__flightLogs : () -> (?Nat, ?Nat);
+        #__leaderboard : () -> (?Nat, ?Nat);
+        #__nextLogId : () -> ();
+        #__nextLeaderboardId : () -> ();
+      };
+    }
+  ) : Bool {
+    switch (msg) {
+      case (#recordFlightLog _) { not caller.isAnonymous() };
+      case (#submitLeaderboardScore _) { not caller.isAnonymous() };
+      case (#assignCallerUserRole _) { not caller.isAnonymous() };
+      case (#_initialize_access_control _) { not caller.isAnonymous() };
+      case (_) { true };
+    };
+  };
 };
