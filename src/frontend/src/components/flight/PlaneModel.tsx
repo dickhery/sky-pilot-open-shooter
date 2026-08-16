@@ -1,4 +1,5 @@
 import { CockpitInterior } from "@/components/flight/CockpitInterior";
+import { HelicopterModel } from "@/components/flight/VehicleModels";
 import type { FlightState } from "@/components/flight/flightPhysics";
 import type { PlaneId } from "@/types/game";
 import { useFrame } from "@react-three/fiber";
@@ -134,11 +135,10 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
     ref,
   ) {
     const isJet = planeId === "StrikeJet";
-    const rotorRef = useRef<THREE.Group>(null);
-    const tailRotorRef = useRef<THREE.Group>(null);
     const gearRef = useRef<THREE.Group>(null);
     const lightRef = useRef<THREE.PointLight>(null);
     const shakeRef = useRef<THREE.Group>(null);
+    const exhaustRef = useRef<THREE.Group>(null);
 
     const colors = useMemo<Palette>(
       () =>
@@ -185,20 +185,13 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
       [isJet],
     );
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
       const throttle = axes.current.throttle;
       const airborne = flightState.current.airborne;
-      if (isJet) {
-        if (shakeRef.current) {
-          const shake = throttle * 0.005;
-          shakeRef.current.position.y =
-            Math.sin(state.clock.elapsedTime * 80) * shake;
-        }
-      } else if (rotorRef.current) {
-        rotorRef.current.rotation.y += delta * (6 + throttle * 28);
-        if (tailRotorRef.current) {
-          tailRotorRef.current.rotation.x += delta * (10 + throttle * 36);
-        }
+      if (isJet && shakeRef.current) {
+        const shake = throttle * 0.005;
+        shakeRef.current.position.y =
+          Math.sin(state.clock.elapsedTime * 80) * shake;
       }
       if (gearRef.current) {
         gearRef.current.visible = !airborne && !cockpitView;
@@ -206,7 +199,26 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
       if (lightRef.current) {
         lightRef.current.intensity = airborne ? 0.15 : 0.55;
       }
+      if (exhaustRef.current) {
+        exhaustRef.current.visible = isJet && throttle > 0.35 && !cockpitView;
+        exhaustRef.current.scale.setScalar(0.7 + throttle * 0.9);
+      }
     });
+
+    if (!isJet) {
+      return (
+        <group ref={ref}>
+          {cockpitView && (
+            <CockpitInterior
+              planeId={planeId}
+              flightState={flightState}
+              axes={axes}
+            />
+          )}
+          <HelicopterModel axes={axes} cockpitView={cockpitView} />
+        </group>
+      );
+    }
 
     return (
       <group ref={ref}>
@@ -330,48 +342,19 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
             </mesh>
           </group>
 
-          {!isJet && (
-            <>
-              <mesh position={[0, 0.22, 2.35]} visible={!cockpitView}>
-                <cylinderGeometry args={[0.09, 0.16, 2.4, 8]} />
-                <meshStandardMaterial color={colors.body} metalness={0.3} />
-              </mesh>
-              <group ref={rotorRef} position={[0, 1.15, 0.15]}>
-                <mesh>
-                  <cylinderGeometry args={[0.08, 0.1, 0.28, 8]} />
-                  <meshStandardMaterial color="#222" metalness={0.6} />
-                </mesh>
-                {[0, 1, 2, 3].map((i) => (
-                  <mesh
-                    key={`blade-${i}`}
-                    rotation={[0, (i * Math.PI) / 2, 0]}
-                    position={[1.7, 0.08, 0]}
-                  >
-                    <boxGeometry args={[3.4, 0.04, 0.22]} />
-                    <meshStandardMaterial color="#1c1c1c" metalness={0.45} />
-                  </mesh>
-                ))}
-              </group>
-              <group ref={tailRotorRef} position={[0.18, 0.72, 3.35]}>
-                <mesh rotation={[0, 0, Math.PI / 2]}>
-                  <boxGeometry args={[1.15, 0.03, 0.12]} />
-                  <meshStandardMaterial color="#222" />
-                </mesh>
-              </group>
-              <mesh position={[0, -0.55, 0.4]} visible={!cockpitView}>
-                <boxGeometry args={[1.6, 0.06, 0.08]} />
-                <meshStandardMaterial color="#555" metalness={0.5} />
-              </mesh>
-              <mesh position={[0.8, -0.75, 0.2]} visible={!cockpitView}>
-                <boxGeometry args={[0.06, 0.45, 1.6]} />
-                <meshStandardMaterial color="#444" />
-              </mesh>
-              <mesh position={[-0.8, -0.75, 0.2]} visible={!cockpitView}>
-                <boxGeometry args={[0.06, 0.45, 1.6]} />
-                <meshStandardMaterial color="#444" />
-              </mesh>
-            </>
-          )}
+          <group ref={exhaustRef} visible={false}>
+            <mesh position={[0.32, -0.18, 3.25]} rotation={[Math.PI / 2, 0, 0]}>
+              <coneGeometry args={[0.15, 0.85, 8]} />
+              <meshBasicMaterial color="#7ec8ff" transparent opacity={0.5} />
+            </mesh>
+            <mesh
+              position={[-0.32, -0.18, 3.25]}
+              rotation={[Math.PI / 2, 0, 0]}
+            >
+              <coneGeometry args={[0.15, 0.85, 8]} />
+              <meshBasicMaterial color="#7ec8ff" transparent opacity={0.5} />
+            </mesh>
+          </group>
 
           <mesh position={[0, 0.02, 0.1]} visible={!cockpitView}>
             <boxGeometry args={[0.08, 0.06, isJet ? 4.6 : 2.8]} />

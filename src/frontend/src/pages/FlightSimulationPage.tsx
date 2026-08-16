@@ -2,6 +2,7 @@ import { Plane as BackendPlane, Weather as BackendWeather } from "@/backend";
 import { FlightScene } from "@/components/flight/FlightScene";
 import { FlightTouchControls } from "@/components/flight/FlightTouchControls";
 import { HUD } from "@/components/flight/HUD";
+import { MissionBriefing } from "@/components/flight/MissionBriefing";
 import { ResultsScreen } from "@/components/flight/ResultsScreen";
 import {
   type LandingHint,
@@ -73,9 +74,19 @@ export function FlightSimulationPage() {
   const setScore = useGameStore((s) => s.setScore);
 
   const [showResults, setShowResults] = useState(false);
+  const [showBriefing, setShowBriefing] = useState(true);
   const [musicOn, setMusicOn] = useState(readMusicPref);
+  const heliStart = selectedPlane?.class === "heli";
   const { axes, touch, throttlePct, brakesOn, cockpitView, toggleCockpit } =
-    useFlightControls({ enabled: !showResults });
+    useFlightControls({
+      enabled: !showResults && !showBriefing,
+      initialThrottle: heliStart ? 0.5 : 0.28,
+    });
+  useEffect(() => {
+    if (selectedPlane?.class === "heli") {
+      axes.current.throttle = Math.max(axes.current.throttle, 0.5);
+    }
+  }, [selectedPlane, axes]);
 
   const planId = selectedPlan ? Number(selectedPlan.id) : 1;
   const layout = useMemo(() => buildSceneLayout(planId), [planId]);
@@ -287,9 +298,11 @@ export function FlightSimulationPage() {
 
   const handleRetry = () => {
     flightState.current = createInitialFlightState(layout);
+    axes.current.throttle = selectedPlane.class === "heli" ? 0.5 : 0.28;
     setPhaseState("takeoff");
     setPhase("takeoff");
     setShowResults(false);
+    setShowBriefing(true);
     setPersisted(false);
     setScoreState({
       speed: 0,
@@ -309,6 +322,7 @@ export function FlightSimulationPage() {
         flightState={flightState}
         onPhaseChange={handlePhaseChange}
         cockpitView={cockpitView}
+        paused={showBriefing}
       />
       <HUD
         altitude={telemetry.altitude}
@@ -334,18 +348,32 @@ export function FlightSimulationPage() {
         sectorTotal={combatHud.sectorTotal}
         targetsLeft={combatHud.targetsLeft}
         multiplier={combatHud.multiplier}
+        vehicleClass={selectedPlane.class}
       />
-      {!showResults && phase !== "crashed" && phase !== "complete" && (
-        <FlightTouchControls
-          touch={touch}
-          throttlePct={throttlePct}
-          brakesOn={brakesOn}
-          cockpitView={cockpitView}
-          onToggleCockpit={toggleCockpit}
-          musicOn={musicOn}
-          onToggleMusic={toggleMusic}
+      {showBriefing && (
+        <MissionBriefing
+          missionName={selectedPlan.name}
+          brief={selectedPlan.routeDescription}
+          sectors={layout.sectors}
+          extractName={selectedPlan.landing.name}
+          plane={selectedPlane}
+          onBegin={() => setShowBriefing(false)}
         />
       )}
+      {!showResults &&
+        !showBriefing &&
+        phase !== "crashed" &&
+        phase !== "complete" && (
+          <FlightTouchControls
+            touch={touch}
+            throttlePct={throttlePct}
+            brakesOn={brakesOn}
+            cockpitView={cockpitView}
+            onToggleCockpit={toggleCockpit}
+            musicOn={musicOn}
+            onToggleMusic={toggleMusic}
+          />
+        )}
       {showResults && (
         <ResultsScreen
           score={score}
@@ -376,27 +404,39 @@ function getMissionBrief(
     case "takeoff":
       return airborne
         ? {
-            objective: `Strike ${waypointName}`,
-            subObjective: "Amber rings mark enemy outposts — fire with F",
+            objective: `Destroy the outpost at ${waypointName}`,
+            subObjective:
+              "Follow the nav arrow to the amber ring — fire with F",
           }
-        : {
-            objective: "Drop in from the FOB strip",
-            subObjective: `Add power, then at ${ROTATE_SPEED_KTS} kt pull up (W) to rotate`,
-          };
+        : canDismount
+          ? {
+              objective: "Lift off and fly to the first outpost",
+              subObjective:
+                "Hold Shift to climb. W flies forward. A / D turns.",
+            }
+          : {
+              objective: "Take off and fly to the first outpost",
+              subObjective: `Shift for power, then at ${ROTATE_SPEED_KTS} kt pull up (W) to rotate`,
+            };
     case "cruising":
       return {
         objective:
           targetsLeft > 0
-            ? `Clear ${waypointName} — ${targetsLeft} targets left`
-            : `Push the next sector or extract at ${landingName}`,
-        subObjective: canDismount
-          ? "Hover, land, E to dismount. F fires. Extra sectors raise the multiplier."
-          : `Strafe the outpost, or land at the FOB and E onto the hovercraft. ${vehicleMode === "hovercraft" ? "Ground run armed." : ""}`,
+            ? `Destroy ${targetsLeft} target${targetsLeft === 1 ? "" : "s"} at ${waypointName}`
+            : `Next outpost, or extract at ${landingName}`,
+        subObjective:
+          vehicleMode === "onFoot"
+            ? "On foot — F to fire, E to remount"
+            : vehicleMode === "hovercraft"
+              ? "Hovercraft — drive in, F to fire, E to hop out"
+              : canDismount
+                ? "Shift climbs. W flies forward. Land + E to go on foot."
+                : "Strafe the amber ring, or land at the FOB and E onto the hovercraft.",
       };
     case "landing":
       return {
-        objective: `Extract at ${landingName}`,
-        subObjective: `Enter the green LZ · heading ${landingHdg.toString().padStart(3, "0")}° · hold brake / E. Or keep hunting for a multiplier.`,
+        objective: `Extract at ${landingName} — or keep hunting`,
+        subObjective: `Green LZ · heading ${landingHdg.toString().padStart(3, "0")}° · hold Space / E to finish`,
       };
     case "crashed":
       return { objective: "Sortie over — the vehicle is down" };

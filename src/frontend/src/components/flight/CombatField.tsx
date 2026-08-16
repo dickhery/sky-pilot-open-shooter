@@ -3,6 +3,7 @@ import type {
   FlightState,
   SceneLayout,
 } from "@/components/flight/flightPhysics";
+import { Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
@@ -84,6 +85,16 @@ function SectorMarker({
         <cylinderGeometry args={[0.18, 0.28, 36, 8]} />
         <meshBasicMaterial color="#ffb14a" transparent opacity={0.28} />
       </mesh>
+      <Html
+        position={[0, 28, 0]}
+        center
+        distanceFactor={80}
+        style={{ pointerEvents: "none" }}
+      >
+        <div className="rounded border border-amber-400/70 bg-black/70 px-2 py-0.5 font-mono text-[10px] tracking-wide text-amber-300 uppercase">
+          Destroy · {sector.name}
+        </div>
+      </Html>
     </group>
   );
 }

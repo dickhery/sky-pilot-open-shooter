@@ -728,32 +728,39 @@ function stepHeli(
   step: number,
 ): void {
   const groundY = GROUND_CONTACT_Y;
-  const hover = 0.48;
+  const hover = 0.5;
   const collective = THREE.MathUtils.clamp(input.throttle, 0, 1);
-  const lift = (collective - hover) * 28;
-  state.verticalSpeed += (lift - state.verticalSpeed * 1.8) * step;
-  if (input.brakes) {
-    state.verticalSpeed -= 6 * step;
-    state.speed = Math.max(0, state.speed - 14 * step);
-  }
-  state.rotation.x += input.pitch * 0.55 * step;
-  state.rotation.x = THREE.MathUtils.clamp(state.rotation.x, -0.42, 0.48);
-  state.rotation.z -= input.roll * 0.85 * step;
-  state.rotation.z = THREE.MathUtils.clamp(state.rotation.z, -0.55, 0.55);
-  if (input.roll === 0) state.rotation.z *= 1 - Math.min(1, step * 2.4);
-  if (input.pitch === 0) state.rotation.x *= 1 - Math.min(1, step * 1.6);
-  state.rotation.y += (-state.rotation.z * 1.35 + input.roll * 0.15) * step;
+  // W = fly forward (cyclic). S = back up. Shift/Ctrl = climb / descend.
+  const cyclicFwd = THREE.MathUtils.clamp(input.pitch, -1, 1);
+  const yaw = THREE.MathUtils.clamp(input.roll, -1, 1);
 
-  const fwd = -state.rotation.x * 42;
-  const targetSpeed = THREE.MathUtils.clamp(fwd + collective * 8, 0, 78);
-  state.speed += (targetSpeed - state.speed) * Math.min(1, step * 1.4);
+  const lift = (collective - hover) * 24;
+  if (!state.airborne && collective < hover + 0.02) {
+    state.verticalSpeed = 0;
+  } else {
+    state.verticalSpeed += (lift - state.verticalSpeed * 2.1) * step;
+  }
+  if (input.brakes) {
+    state.verticalSpeed -= 8 * step;
+    state.speed += (0 - state.speed) * Math.min(1, step * 2.4);
+  }
+
+  const noseTarget = -cyclicFwd * 0.28;
+  state.rotation.x += (noseTarget - state.rotation.x) * Math.min(1, step * 4);
+  const bankTarget = yaw * 0.32;
+  state.rotation.z += (bankTarget - state.rotation.z) * Math.min(1, step * 5);
+  state.rotation.y -= yaw * 1.45 * step;
+
+  const maxHeli = 56;
+  const targetSpeed = cyclicFwd * maxHeli;
+  state.speed += (targetSpeed - state.speed) * Math.min(1, step * 1.8);
 
   state.position.y += state.verticalSpeed * step;
   const heading = state.rotation.y;
   _forward.set(-Math.sin(heading), 0, -Math.cos(heading));
   state.position.addScaledVector(_forward, state.speed * step);
 
-  if (state.position.y > groundY + 0.2) {
+  if (state.position.y > groundY + 0.18) {
     state.airborne = true;
     state.hasFlown = true;
   }
@@ -762,19 +769,19 @@ function stepHeli(
     state.position.y = groundY;
     state.airborne = false;
     state.verticalSpeed = 0;
-    if (descent > 9) {
+    if (descent > 10) {
       crash(state, "hard_landing", groundY);
       return;
     }
-    if (state.speed > 28) {
+    if (Math.abs(state.speed) > 32) {
       crash(state, "too_fast", groundY);
       return;
     }
-    state.rotation.x *= 0.2;
-    state.rotation.z *= 0.2;
+    state.rotation.x *= 0.25;
+    state.rotation.z *= 0.25;
     if (isOnLandingRunway(state.position, layout) && state.sectorsCleared > 0) {
       state.landingHint = "extract_ready";
-    } else if (plane.canDismount) {
+    } else if (plane.canDismount && Math.abs(state.speed) < 4) {
       state.landingHint = "dismount";
     }
   }

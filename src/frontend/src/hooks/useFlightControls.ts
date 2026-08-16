@@ -55,11 +55,14 @@ const KEY_MAP: Record<
 
 export function useFlightControls(options?: {
   enabled?: boolean;
+  /** 0–1 start collective / throttle. Helicopters want ~0.5 (hover). */
+  initialThrottle?: number;
 }): FlightControls {
+  const initialThrottle = options?.initialThrottle ?? 0.25;
   const axes = useRef<ControlAxes>({
     pitch: 0,
     roll: 0,
-    throttle: 0.25,
+    throttle: initialThrottle,
     brakes: false,
     fire: false,
     interact: false,
@@ -74,7 +77,9 @@ export function useFlightControls(options?: {
   });
   const keys = useRef<Set<string>>(new Set());
   const target = useRef({ pitch: 0, roll: 0 });
-  const [throttlePct, setThrottlePct] = useState(25);
+  const [throttlePct, setThrottlePct] = useState(() =>
+    Math.round(initialThrottle * 100),
+  );
   const [brakesOn, setBrakesOn] = useState(false);
   const [cockpitView, setCockpitView] = useState(false);
   const enabled = options?.enabled ?? true;

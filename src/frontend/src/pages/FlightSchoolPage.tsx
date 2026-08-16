@@ -32,7 +32,7 @@ const PHASES: Phase[] = [
     summary:
       "Take off from the FOB in a strike jet or attack helicopter and enter the theater.",
     details: [
-      "Add power with Shift. Jets rotate around 95 kt; the helicopter lifts when collective is above hover.",
+      "Jet: Shift for power, then W to rotate around 95 kt. Helicopter: hold Shift to climb, W to fly forward, A / D to turn.",
       "The AH-9 Spectre can hover and land off-strip. The F-27 Viper needs a paved FOB or extract strip.",
       "Amber rings mark enemy outposts. The green ring is the extract LZ — it lights after the first sector falls.",
     ],

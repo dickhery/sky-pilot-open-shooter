@@ -44,6 +44,8 @@ export interface FlightSceneProps {
   onPhaseChange: (phase: FlightPhase) => void;
   /** Pilot-seat camera when true. */
   cockpitView: boolean;
+  /** Freeze physics while the briefing overlay is up. */
+  paused?: boolean;
 }
 
 /**
@@ -59,6 +61,7 @@ export function FlightScene({
   flightState,
   onPhaseChange,
   cockpitView,
+  paused = false,
 }: FlightSceneProps) {
   return (
     <Canvas
@@ -107,6 +110,7 @@ export function FlightScene({
         flightState={flightState}
         onPhaseChange={onPhaseChange}
         cockpitView={cockpitView}
+        paused={paused}
       />
     </Canvas>
   );
@@ -335,6 +339,7 @@ function FlightRig({
   flightState,
   onPhaseChange,
   cockpitView,
+  paused,
 }: {
   plane: PlaneType;
   layout: SceneLayout;
@@ -342,6 +347,7 @@ function FlightRig({
   flightState: React.MutableRefObject<FlightState>;
   onPhaseChange: (phase: FlightPhase) => void;
   cockpitView: boolean;
+  paused: boolean;
 }) {
   const planeRef = useRef<THREE.Group>(null);
   const shadowRef = useRef<THREE.Mesh>(null);
@@ -355,7 +361,9 @@ function FlightRig({
     const state = flightState.current;
     const input = controlsAxes.current;
 
-    stepFlight(state, layout, plane, input, dt);
+    if (!paused) {
+      stepFlight(state, layout, plane, input, dt);
+    }
 
     if (state.phase !== lastPhase.current) {
       lastPhase.current = state.phase;

@@ -3,7 +3,7 @@ import {
   type LandingHint,
   ROTATE_SPEED_KTS,
 } from "@/components/flight/flightPhysics";
-import type { FlightPhase, VehicleMode } from "@/types/game";
+import type { FlightPhase, VehicleClass, VehicleMode } from "@/types/game";
 import {
   CheckCircle2,
   Circle,
@@ -48,6 +48,7 @@ interface HUDProps {
   sectorTotal: number;
   targetsLeft: number;
   multiplier: number;
+  vehicleClass: VehicleClass;
 }
 
 const MISSION_STEPS = [
@@ -90,6 +91,7 @@ export function HUD({
   sectorTotal,
   targetsLeft,
   multiplier,
+  vehicleClass,
 }: HUDProps) {
   const phaseLabel: Record<FlightPhase, string> = {
     idle: "Standby",
@@ -224,6 +226,21 @@ export function HUD({
         )}
         {phase === "takeoff" &&
           !airborne &&
+          vehicleClass === "heli" &&
+          vehicleMode === "air" && (
+            <div className="glow-caution hud-scanlines flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-2.5 py-1.5 backdrop-blur">
+              <TriangleAlert
+                className="h-3.5 w-3.5 text-accent"
+                aria-hidden="true"
+              />
+              <span className="hud-label text-[10px] text-accent">
+                Hold Shift to climb — W flies forward
+              </span>
+            </div>
+          )}
+        {phase === "takeoff" &&
+          !airborne &&
+          vehicleClass === "jet" &&
           airspeed >= ROTATE_SPEED_KTS - 8 && (
             <div className="glow-caution hud-scanlines flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-2.5 py-1.5 backdrop-blur">
               <TriangleAlert
@@ -259,7 +276,9 @@ export function HUD({
         >
           <div className="flex items-center justify-between">
             <span className="hud-label text-[10px] text-muted-foreground">
-              Throttle
+              {vehicleClass === "heli" && vehicleMode === "air"
+                ? "Collective"
+                : "Throttle"}
             </span>
             <span className="hud-label hud-readout text-xs font-bold">
               {throttlePct}%
@@ -373,24 +392,12 @@ export function HUD({
           </span>
         </div>
         <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
-          <Key>W / S</Key>
-          <span>Pitch / walk</span>
-          <Key>A / D</Key>
-          <span>Turn / bank</span>
-          <Key>Shift</Key>
-          <span>More power</span>
-          <Key>Ctrl</Key>
-          <span>Less power</span>
-          <Key>F</Key>
-          <span>Fire cannon</span>
-          <Key>E</Key>
-          <span>Board / dismount</span>
-          <Key>Space</Key>
-          <span>Brakes / extract</span>
-          <Key>C</Key>
-          <span>Cockpit / chase</span>
-          <Key>M</Key>
-          <span>Music on / off</span>
+          {controlRows(vehicleMode, vehicleClass).map((row) => (
+            <span key={row.key} className="contents">
+              <Key>{row.input}</Key>
+              <span>{row.action}</span>
+            </span>
+          ))}
         </div>
         <button
           type="button"
@@ -471,6 +478,50 @@ function Instrument({
       </div>
     </div>
   );
+}
+
+function controlRows(
+  mode: VehicleMode,
+  vehicleClass: VehicleClass,
+): { key: string; input: string; action: string }[] {
+  if (mode === "onFoot") {
+    return [
+      { key: "ws", input: "W / S", action: "Walk forward / back" },
+      { key: "ad", input: "A / D", action: "Turn" },
+      { key: "f", input: "F", action: "Fire rifle" },
+      { key: "e", input: "E", action: "Board nearby vehicle" },
+    ];
+  }
+  if (mode === "hovercraft") {
+    return [
+      { key: "ws", input: "W / S", action: "Drive / reverse" },
+      { key: "ad", input: "A / D", action: "Steer" },
+      { key: "sh", input: "Shift", action: "More speed" },
+      { key: "f", input: "F", action: "Fire" },
+      { key: "e", input: "E", action: "Dismount" },
+      { key: "sp", input: "Space", action: "Brake / extract" },
+    ];
+  }
+  if (vehicleClass === "heli") {
+    return [
+      { key: "sh", input: "Shift", action: "Climb (collective)" },
+      { key: "ct", input: "Ctrl", action: "Descend" },
+      { key: "ws", input: "W / S", action: "Fly forward / back" },
+      { key: "ad", input: "A / D", action: "Turn" },
+      { key: "f", input: "F", action: "Fire cannon" },
+      { key: "e", input: "E", action: "Land, then dismount" },
+      { key: "sp", input: "Space", action: "Settle / extract" },
+    ];
+  }
+  return [
+    { key: "ws", input: "W / S", action: "Pitch up / down" },
+    { key: "ad", input: "A / D", action: "Bank / turn" },
+    { key: "sh", input: "Shift", action: "Throttle up" },
+    { key: "ct", input: "Ctrl", action: "Throttle down" },
+    { key: "f", input: "F", action: "Fire cannon" },
+    { key: "e", input: "E", action: "FOB pad → hovercraft" },
+    { key: "sp", input: "Space", action: "Brakes / extract" },
+  ];
 }
 
 function Key({ children }: { children: React.ReactNode }) {

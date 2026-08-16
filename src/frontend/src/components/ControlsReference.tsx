@@ -38,7 +38,7 @@ const BINDINGS: ControlBinding[] = [
   {
     input: "W",
     alt: "↑",
-    action: "Pitch up / walk forward — jet nose up, on-foot advance",
+    action: "Jet: pitch up. Heli: fly forward. On foot: walk",
     icon: ArrowUp,
     group: "Pitch",
   },
@@ -65,7 +65,7 @@ const BINDINGS: ControlBinding[] = [
   },
   {
     input: "Shift",
-    action: "Throttle / collective up — jet thrust or heli lift",
+    action: "Jet throttle up, or helicopter collective (climb)",
     icon: Gauge,
     group: "Throttle",
   },
