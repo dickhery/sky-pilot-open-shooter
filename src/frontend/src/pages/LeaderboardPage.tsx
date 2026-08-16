@@ -64,8 +64,8 @@ export function LeaderboardPage() {
           Leaderboard
         </h1>
         <p className="max-w-xl text-sm text-muted-foreground">
-          Top 10 clean landings on each route. Sign in with Internet Identity
-          after a flight to post a display name and score.
+          Top 10 extracts on each theater. Sign in with Internet Identity after
+          a sortie to post a display name and score.
         </p>
       </header>
 
@@ -100,7 +100,7 @@ export function LeaderboardPage() {
       {!isLoading && !isError && mapNames.length === 0 && (
         <Card className="border-border bg-card/70">
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            No scores posted yet. Land clean, sign in, and claim the top row.
+            No scores posted yet. Extract clean, sign in, and claim the top row.
           </CardContent>
         </Card>
       )}

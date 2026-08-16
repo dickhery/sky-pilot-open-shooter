@@ -3,7 +3,7 @@ import {
   type LandingHint,
   ROTATE_SPEED_KTS,
 } from "@/components/flight/flightPhysics";
-import type { FlightPhase } from "@/types/game";
+import type { FlightPhase, VehicleMode } from "@/types/game";
 import {
   CheckCircle2,
   Circle,
@@ -42,18 +42,28 @@ interface HUDProps {
   onToggleCockpit: () => void;
   musicOn: boolean;
   onToggleMusic: () => void;
+  vehicleMode: VehicleMode;
+  playerHealth: number;
+  sectorsCleared: number;
+  sectorTotal: number;
+  targetsLeft: number;
+  multiplier: number;
 }
 
 const MISSION_STEPS = [
-  { phase: "takeoff", label: "Take off" },
-  { phase: "cruising", label: "Gates" },
-  { phase: "landing", label: "Approach" },
-  { phase: "rollout", label: "Land" },
+  { phase: "takeoff", label: "Drop in" },
+  { phase: "cruising", label: "Clear" },
+  { phase: "landing", label: "Extract" },
+  { phase: "rollout", label: "Done" },
 ] as const;
 
 const HINT_MESSAGES: Record<NonNullable<LandingHint>, string> = {
-  brake_to_finish: "Touchdown! Hold brake / Space below 20 kt to finish",
-  gate_cleared: "Gate cleared — fly through the next ring",
+  brake_to_finish: "Hold brake / Space to finish the extract",
+  gate_cleared: "Sector marked",
+  sector_cleared: "Sector cleared — push the next outpost or extract",
+  extract_ready: "In the LZ — hold brake / E to extract",
+  board: "Boarded",
+  dismount: "Dismounted — E near a vehicle to remount",
 };
 
 export function HUD({
@@ -74,16 +84,28 @@ export function HUD({
   onToggleCockpit,
   musicOn,
   onToggleMusic,
+  vehicleMode,
+  playerHealth,
+  sectorsCleared,
+  sectorTotal,
+  targetsLeft,
+  multiplier,
 }: HUDProps) {
   const phaseLabel: Record<FlightPhase, string> = {
     idle: "Standby",
-    takeoff: "Takeoff",
-    cruising: "Cruise",
-    landing: "Approach",
-    rollout: "Rollout",
+    takeoff: "Drop-in",
+    cruising: "Combat",
+    landing: "Extract",
+    rollout: "Extract",
     complete: "Complete",
-    crashed: "Crashed",
+    crashed: "Down",
   };
+  const modeLabel =
+    vehicleMode === "air"
+      ? "Air"
+      : vehicleMode === "hovercraft"
+        ? "Hovercraft"
+        : "On foot";
 
   const headingStr = `${Math.round(((heading % 360) + 360) % 360)
     .toString()
@@ -215,14 +237,15 @@ export function HUD({
           )}
         {phase === "landing" &&
           airborne &&
-          airspeed > APPROACH_SPEED_KTS + 15 && (
+          vehicleMode === "air" &&
+          airspeed > APPROACH_SPEED_KTS + 40 && (
             <div className="glow-caution hud-scanlines flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-2.5 py-1.5 backdrop-blur">
               <TriangleAlert
                 className="h-3.5 w-3.5 text-accent"
                 aria-hidden="true"
               />
               <span className="hud-label text-[10px] text-accent">
-                Slow to {APPROACH_SPEED_KTS} kt before landing
+                Slow before extract
               </span>
             </div>
           )}
@@ -261,6 +284,36 @@ export function HUD({
             <span className="hud-label text-[10px] text-accent">Brakes</span>
           </div>
         )}
+        <div
+          className="hud-scanlines glow-instrument hidden w-40 rounded-md border border-primary/50 bg-black/70 p-2 backdrop-blur md:block"
+          data-ocid="flight.hud.combat"
+        >
+          <div className="flex items-center justify-between">
+            <span className="hud-label text-[10px] text-muted-foreground">
+              {modeLabel}
+            </span>
+            <span className="hud-label text-[10px] text-accent">
+              ×{multiplier.toFixed(2)}
+            </span>
+          </div>
+          <div className="mt-1 flex items-center justify-between">
+            <span className="hud-label text-[9px] text-muted-foreground">
+              Hull
+            </span>
+            <span className="hud-label hud-readout text-xs font-bold">
+              {Math.round(playerHealth)}
+            </span>
+          </div>
+          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-sm bg-secondary">
+            <div
+              className={`h-full ${playerHealth > 40 ? "bg-primary" : "bg-accent"}`}
+              style={{ width: `${Math.max(0, Math.min(100, playerHealth))}%` }}
+            />
+          </div>
+          <p className="hud-label mt-1.5 text-[9px] text-muted-foreground">
+            Sectors {sectorsCleared}/{sectorTotal} · {targetsLeft} left
+          </p>
+        </div>
       </div>
 
       {/* Bottom-center: navigation */}
@@ -272,9 +325,9 @@ export function HUD({
           <div className="flex flex-col">
             <span className="hud-label text-[9px] text-muted-foreground">
               {nextWaypoint.kind === "gate"
-                ? `Fly through ${nextWaypoint.index ?? 0}/${nextWaypoint.total ?? 0}`
+                ? `Sector ${nextWaypoint.index ?? 0}/${nextWaypoint.total ?? 0}`
                 : phase === "landing" || phase === "rollout"
-                  ? "Landing Runway"
+                  ? "Extract LZ"
                   : "Navigate To"}
             </span>
             <span className="hud-label hud-readout text-sm font-bold">
@@ -321,15 +374,19 @@ export function HUD({
         </div>
         <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
           <Key>W / S</Key>
-          <span>Pitch up / down</span>
+          <span>Pitch / walk</span>
           <Key>A / D</Key>
-          <span>Turn (bank)</span>
+          <span>Turn / bank</span>
           <Key>Shift</Key>
           <span>More power</span>
           <Key>Ctrl</Key>
           <span>Less power</span>
+          <Key>F</Key>
+          <span>Fire cannon</span>
+          <Key>E</Key>
+          <span>Board / dismount</span>
           <Key>Space</Key>
-          <span>Brakes</span>
+          <span>Brakes / extract</span>
           <Key>C</Key>
           <span>Cockpit / chase</span>
           <Key>M</Key>
@@ -375,7 +432,7 @@ function NavArrow({ heading, bearing }: { heading: number; bearing: number }) {
       >
         <Navigation className="h-5 w-5" />
       </div>
-      <span className="hud-label text-[9px] text-accent">Next gate</span>
+      <span className="hud-label text-[9px] text-accent">Nav</span>
     </div>
   );
 }

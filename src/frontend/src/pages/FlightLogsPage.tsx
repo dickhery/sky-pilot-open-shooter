@@ -46,7 +46,7 @@ export function FlightLogsPage() {
           Flight Logs
         </h1>
         <p className="max-w-xl text-sm text-muted-foreground">
-          Every landing you've logged is recorded here — speed, smoothness, and
+          Every extract you've logged is recorded here — tempo, accuracy, and
           the conditions you flew through.
         </p>
       </header>
@@ -132,8 +132,8 @@ export function FlightLogsPage() {
                 No flights logged yet
               </h2>
               <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-                Your logbook is empty. Pick a flight plan, take to the sky, and
-                your first landing will be recorded here.
+                Your logbook is empty. Pick a mission, clear a sector, and your
+                first extract will be recorded here.
               </p>
             </div>
             <Button

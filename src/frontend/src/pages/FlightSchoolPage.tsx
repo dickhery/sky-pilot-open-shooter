@@ -26,40 +26,38 @@ interface Phase {
 
 const PHASES: Phase[] = [
   {
-    id: "takeoff",
+    id: "dropin",
     step: 1,
-    title: "Take-off",
+    title: "Drop in",
     summary:
-      "Accelerate down the runway, build airspeed, and rotate to lift off.",
+      "Take off from the FOB in a strike jet or attack helicopter and enter the theater.",
     details: [
-      "Add power with Shift or the throttle slider — watch the airspeed climb past rotation speed.",
-      "On the ground, A / D or the left stick steers the nosewheel — keep the nose on the centreline.",
-      "Pull back on W, ↑, or drag the stick up to rotate at about 55 kt — lift the nose smoothly.",
-      "Once airborne, ease the nose down slightly to build speed before climbing out.",
+      "Add power with Shift. Jets rotate around 95 kt; the helicopter lifts when collective is above hover.",
+      "The AH-9 Spectre can hover and land off-strip. The F-27 Viper needs a paved FOB or extract strip.",
+      "Amber rings mark enemy outposts. The green ring is the extract LZ — it lights after the first sector falls.",
     ],
   },
   {
-    id: "navigation",
+    id: "clear",
     step: 2,
-    title: "Navigation",
-    summary: "Fly through every glowing cyan ring on the course.",
+    title: "Clear sectors",
+    summary: "Destroy every target in an outpost, then push or extract.",
     details: [
-      "Each ring is a required checkpoint — fly through the bright one to clear it.",
-      "Cleared rings vanish. The next gate lights up. Skip one and a landing will not count.",
-      "Bank with A / D or the left stick to turn — the aircraft yaws into the bank on its own.",
-      "Hold back-pressure (stick up / W) in a turn or you will lose altitude. Pitch trades speed for height.",
+      "Fire with F or the left mouse button. Turrets shoot back — do not linger in their envelope.",
+      "Clearing a sector raises the score multiplier. Extract after one, or keep hunting for more.",
+      "On the Spectre, land and press E to dismount. On the Viper, land at the FOB and E onto the hovercraft.",
     ],
   },
   {
-    id: "landing",
+    id: "extract",
     step: 3,
-    title: "Landing",
-    summary: "Align with the runway, descend smoothly, and touch down gently.",
+    title: "Extract",
+    summary:
+      "Enter the green LZ on any vehicle (or on foot) and hold to finish.",
     details: [
-      "Line up with the runway centreline early — small roll corrections, no sudden banks.",
-      "Reduce throttle with Ctrl or the slider to descend; aim for a steady glide path.",
-      "Flare just before touchdown by pulling up gently (stick up / W) to soften the contact.",
-      "A hard, fast, crooked, or off-runway arrival crashes the aircraft — the flight is over. Only a clean landing on the destination runway earns a score.",
+      "At least one sector must be cleared before an extract counts.",
+      "Hold brake / Space or press E in the LZ. A jet that puts down off-strip crashes.",
+      "Combat never writes the canister. Only a finished extract is logged — one update, signed in.",
     ],
   },
 ];
@@ -73,31 +71,30 @@ interface ScoreFactor {
 
 const SCORE_FACTORS: ScoreFactor[] = [
   {
-    id: "speed",
-    label: "Speed",
+    id: "tempo",
+    label: "Tempo",
     weight: "40%",
     description:
-      "Time to complete the flight plan. Faster runs earn a higher speed multiplier — but reckless flying costs you on the landing score.",
+      "Time to clear sectors and extract. Faster sorties score higher, but rushing turrets costs hull.",
   },
   {
-    id: "alignment",
-    label: "Runway Alignment",
+    id: "accuracy",
+    label: "Accuracy",
     weight: "30%",
     description:
-      "How closely you track the runway centreline at touchdown. Off-centre touchdowns bleed points fast.",
+      "Hits versus shots fired, plus remaining hull. Spray-and-pray bleeds this score.",
   },
   {
-    id: "descent",
-    label: "Descent Rate",
+    id: "extract",
+    label: "Extract",
     weight: "30%",
     description:
-      "Vertical speed at the moment of touchdown. A gentle flare keeps this number low and the score high.",
+      "How cleanly you reached the LZ, remaining health, and how many sectors you cleared.",
   },
 ];
 
 /**
- * Flight School — reference page covering controls, the three flight phases,
- * and how the final score is calculated. Cockpit Noir themed.
+ * Briefing Room — controls, arcade loop, and scoring.
  */
 export function FlightSchoolPage() {
   return (
@@ -107,27 +104,25 @@ export function FlightSchoolPage() {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 py-2"
     >
-      {/* ── Page header ─────────────────────────────────────────────── */}
       <header className="flex flex-col gap-3" data-ocid="flight_school.page">
         <div className="flex items-center gap-3">
           <span className="glow-instrument flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <BookOpen className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>
-            <p className="hud-label text-[10px] text-primary">Ground School</p>
+            <p className="hud-label text-[10px] text-primary">Operations</p>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              Flight School
+              Briefing Room
             </h1>
           </div>
         </div>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Before you take to the skies, learn the controls, the three phases of
-          every flight, and how your final score is calculated. Study this
-          briefing — every clean landing starts here.
+          Hybrid air-to-ground loop: drop in, clear a sector, extract — or push
+          the next outpost for a multiplier. The theater is large and open, but
+          finite. No infinite streaming.
         </p>
       </header>
 
-      {/* ── Section 1: Controls reference ───────────────────────────── */}
       <section
         className="flex flex-col gap-4"
         data-ocid="flight_school.controls.section"
@@ -139,7 +134,6 @@ export function FlightSchoolPage() {
         <ControlsReference />
       </section>
 
-      {/* ── Section 2: How-to-play walkthrough ──────────────────────── */}
       <section
         className="flex flex-col gap-4"
         data-ocid="flight_school.walkthrough.section"
@@ -151,18 +145,17 @@ export function FlightSchoolPage() {
         <Card className="glow-instrument border-primary/30 bg-card/80">
           <CardHeader className="border-b border-border/60 bg-secondary/40">
             <CardTitle className="font-display text-lg tracking-tight text-foreground">
-              The Three Phases of Flight
+              The Arcade Loop
             </CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              Every flight plan moves through take-off, navigation, and landing.
-              Expand each phase to study the procedure.
+              Drop in, clear, extract. Expand each phase for the procedure.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <Accordion
               type="single"
               collapsible
-              defaultValue="takeoff"
+              defaultValue="dropin"
               className="w-full"
             >
               {PHASES.map((phase) => (
@@ -213,7 +206,6 @@ export function FlightSchoolPage() {
         </Card>
       </section>
 
-      {/* ── Section 3: Scoring explanation ─────────────────────────── */}
       <section
         className="flex flex-col gap-4"
         data-ocid="flight_school.scoring.section"
@@ -230,8 +222,8 @@ export function FlightSchoolPage() {
                   How Your Score Is Calculated
                 </CardTitle>
                 <CardDescription className="text-sm text-muted-foreground">
-                  Total score combines speed with landing quality. Smooth,
-                  well-aligned touchdowns are rewarded as heavily as a fast run.
+                  Total score combines tempo, accuracy, and extract quality,
+                  then a sector multiplier (1.00 / 1.25 / 1.50).
                 </CardDescription>
               </div>
               <Landmark
@@ -274,10 +266,10 @@ export function FlightSchoolPage() {
                 <span className="hud-label text-[10px] text-primary">
                   Final Score
                 </span>{" "}
-                = Speed (40%) + Runway Alignment (30%) + Descent Rate (30%).
-                Land too hard, too fast, off the runway, or without flying the
-                gates and the aircraft crashes — no score is logged. Only a
-                clean destination landing is written to the logbook.
+                = (Tempo 40% + Accuracy 30% + Extract 30%) × sector multiplier,
+                capped at 100. Shot down, crashed, or extracting with no sector
+                cleared logs nothing. Sign in with Internet Identity to persist
+                a score — one canister write per extract.
               </p>
             </div>
           </CardContent>

@@ -1,25 +1,31 @@
-// Frontend domain types for Sky Pilot flight simulator.
-// These mirror the backend domain model (FlightPlan, Plane, Weather,
-// FlightLog, ScoreBreakdown) and add frontend-only runtime types
-// (FlightPhase, GameStatus) used by the in-cockpit game store.
+// Frontend domain types for Sky Pilot open shooter.
+// Backend still stores plane as #cessna / #gulfstream (Candid-stable).
+// The frontend maps those to the strike jet and attack helicopter.
 
 export type Weather = "Daytime" | "Nighttime" | "PartlyCloudy";
 
-export type PlaneId = "CessnaSkyhawk" | "Extra300";
+export type PlaneId = "StrikeJet" | "AttackHeli";
+
+export type VehicleClass = "jet" | "heli";
+
+export type VehicleMode = "air" | "hovercraft" | "onFoot";
 
 export interface Plane {
   id: PlaneId;
+  class: VehicleClass;
   name: string;
   /** Short tagline describing the handling character. */
   handling: string;
-  /** Top speed in knots — affects scoring on speed. */
+  /** Top speed in knots — affects scoring on tempo. */
   topSpeedKts: number;
   /** 0–1 agility rating; higher = more responsive controls. */
   agility: number;
-  /** 0–1 stability rating; higher = easier to land smoothly. */
+  /** 0–1 stability rating; higher = easier to hold a hover / land. */
   stability: number;
   /** One-line description shown on the plane-select card. */
   description: string;
+  canHover: boolean;
+  canDismount: boolean;
 }
 
 export interface FlightPlan {
@@ -40,13 +46,13 @@ export interface FlightPlan {
 }
 
 export interface ScoreBreakdown {
-  /** 0–100 — how quickly the route was completed. */
+  /** 0–100 — how quickly sectors were cleared. */
   speed: number;
-  /** 0–100 — vertical speed / touchdown firmness at landing. */
+  /** 0–100 — combat accuracy and remaining hull. */
   landingSmoothness: number;
-  /** 0–100 — how centered on the runway centerline at touchdown. */
+  /** 0–100 — extract quality (health, alignment, multiplier). */
   runwayAlignment: number;
-  /** Weighted composite 0–100. */
+  /** Weighted composite 0–100, after sector multiplier. */
   total: number;
 }
 

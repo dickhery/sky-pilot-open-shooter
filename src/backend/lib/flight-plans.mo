@@ -6,23 +6,22 @@ module {
   public type Plane = Types.Plane;
   public type Weather = Types.Weather;
 
-  /// The first selectable plane (static record literal so it can be reused
-  /// in the plans array without array indexing, which is non-static).
-  public let cessna : Plane = {
+  /// Strike jet. Catalog id 1 — stored logs still use the #cessna variant.
+  public let viper : Plane = {
     id = 1;
-    name = "Cessna Skyhawk";
-    handling = "Stable and forgiving — easy to control, ideal for new pilots.";
+    name = "F-27 Viper";
+    handling = "Supersonic strike jet — fast attack runs, land at a FOB to take a hovercraft.";
   };
 
-  /// The second selectable plane.
-  public let gulfstream : Plane = {
+  /// Attack helicopter. Catalog id 2 — stored logs still use the #gulfstream variant.
+  public let spectre : Plane = {
     id = 2;
-    name = "Gulfstream G700";
-    handling = "Fast and sporty — quick and responsive, rewards skilled flying.";
+    name = "AH-9 Spectre";
+    handling = "Attack helicopter — hover, land off-strip, dismount, and clear on foot.";
   };
 
-  /// The two selectable planes with distinct handling characteristics.
-  public let planes : [Plane] = [cessna, gulfstream];
+  /// The two selectable airframes with distinct combat roles.
+  public let planes : [Plane] = [viper, spectre];
 
   /// The three supported weather conditions.
   public let weather : [Weather] = [
@@ -31,82 +30,83 @@ module {
     #partlyCloudy,
   ];
 
-  /// The full catalog of selectable flight plans covering all weather
-  /// conditions and both planes.
+  /// Mission catalog. Each plan is a bounded theater: drop in, clear
+  /// sectors for a multiplier, then extract. Query-only — no canister
+  /// writes, so listing missions stays cheap on cycles.
   public let plans : [FlightPlan] = [
     {
       id = 1;
-      name = "Morning Coastal Hop";
+      name = "Coastal Sweep";
       weather = #daytime;
-      plane = cessna;
-      departure = { name = "09L"; description = "Sea-level runway with calm morning winds." };
-      waypoint = { name = "Lighthouse Point"; description = "Follow the coastline to the lighthouse beacon." };
-      landing = { name = "27R"; description = "Inland runway, gentle approach over the marsh." };
-      routeDescription = "A relaxed daytime coastal flight in the Cessna — perfect for first-timers.";
+      plane = viper;
+      departure = { name = "FOB Tide"; description = "Sea-level strip. Drop in, then strike coastal batteries." };
+      waypoint = { name = "Lighthouse Battery"; description = "First sector — clear the gun nests on the point." };
+      landing = { name = "LZ Marsh"; description = "Extract strip inland. Or push the next ridge for a multiplier." };
+      routeDescription = "Daylight jet raid. Flatten the coastal outposts, then extract or push inland for bonus sectors.";
     },
     {
       id = 2;
-      name = "Midday Crosswind Run";
+      name = "Ridge Hammer";
       weather = #daytime;
-      plane = gulfstream;
-      departure = { name = "12"; description = "Short mountain runway with shifting crosswinds." };
-      waypoint = { name = "Ridge Pass"; description = "Climb over the ridge and hold heading through the gap." };
-      landing = { name = "30"; description = "Long plateau runway, watch for gusts on final." };
-      routeDescription = "A fast daytime mountain crossing in the Gulfstream — test your speed and precision.";
+      plane = spectre;
+      departure = { name = "FOB Granite"; description = "Short mountain pad with shifting crosswinds." };
+      waypoint = { name = "Ridge Pass Camp"; description = "Hover the pass and put troops on the ridge." };
+      landing = { name = "LZ Plateau"; description = "High extract pad. Clear the valley camp first for a multiplier." };
+      routeDescription = "Helicopter assault on the ridge. Land, dismount, and clear the pass before extracting.";
     },
     {
       id = 3;
-      name = "Midnight Harbor Approach";
+      name = "Harbor Raid";
       weather = #nighttime;
-      plane = cessna;
-      departure = { name = "04R"; description = "Quiet night runway lit by runway edge lights." };
-      waypoint = { name = "Harbor Beacon"; description = "Navigate by harbor lights to the lit beacon marker." };
-      landing = { name = "22L"; description = "Glide slope lights guide you onto the harbor runway." };
-      routeDescription = "A serene nighttime harbor flight in the Cessna — fly by the city lights.";
+      plane = viper;
+      departure = { name = "FOB Nightfall"; description = "Lit night strip on the harbor rim." };
+      waypoint = { name = "Beacon Wharf"; description = "Night sector — hit the docks and the radar hut." };
+      landing = { name = "LZ Quay"; description = "Harbor extract. A hovercraft run finishes closer targets." };
+      routeDescription = "Night jet strike on the harbor. Strafe the wharf, then extract or take the hovercraft in.";
     },
     {
       id = 4;
-      name = "Night Express";
+      name = "Night Stalker";
       weather = #nighttime;
-      plane = gulfstream;
-      departure = { name = "16"; description = "Downtown night runway, skyline glow on takeoff." };
-      waypoint = { name = "City Tower"; description = "Bank toward the illuminated tower and circle it." };
-      landing = { name = "34"; description = "Approach between skyscrapers onto the city runway." };
-      routeDescription = "A high-speed nighttime city circuit in the Gulfstream — threading the skyline.";
+      plane = spectre;
+      departure = { name = "FOB Neon"; description = "Downtown pad, skyline glow on lift-off." };
+      waypoint = { name = "Tower District"; description = "Urban outpost under the illuminated tower." };
+      landing = { name = "LZ Uptown"; description = "Extract between the blocks after the rooftop sweep." };
+      routeDescription = "Night helicopter sweep through the city. Hover the tower block, dismount, and extract uptown.";
     },
     {
       id = 5;
-      name = "Cloudy Valley Tour";
+      name = "Valley Sweep";
       weather = #partlyCloudy;
-      plane = cessna;
-      departure = { name = "07L"; description = "Valley floor runway under a partly cloudy sky." };
-      waypoint = { name = "Cloud Gap"; description = "Climb through the cloud gap to the valley overlook." };
-      landing = { name = "25R"; description = "Descend below the clouds onto the far valley runway." };
-      routeDescription = "A scenic cloudy valley flight in the Cessna — watch the shifting cloud cover.";
+      plane = viper;
+      departure = { name = "FOB Hollow"; description = "Valley-floor strip under broken cloud." };
+      waypoint = { name = "Cloud Gap Camp"; description = "First sector in the gap — radar and bunkers." };
+      landing = { name = "LZ Overlook"; description = "Far-valley extract. Push the river camp for a multiplier." };
+      routeDescription = "Jet run down the valley. Clear the gap, then extract at the overlook or keep hunting.";
     },
     {
       id = 6;
-      name = "Storm Front Sprint";
+      name = "Storm Front";
       weather = #partlyCloudy;
-      plane = gulfstream;
-      departure = { name = "13"; description = "Coastal runway with building cloud cover offshore." };
-      waypoint = { name = "Weather Buoy"; description = "Push out over the water to the weather buoy marker." };
-      landing = { name = "31"; description = "Beat the clouds back to the coastal runway." };
-      routeDescription = "A brisk cloudy coastal sprint in the Gulfstream — race the incoming weather.";
+      plane = spectre;
+      departure = { name = "FOB Gale"; description = "Coastal pad with building cloud cover offshore." };
+      waypoint = { name = "Buoy Battery"; description = "Offshore guns and a weather radar shack." };
+      landing = { name = "LZ Spit"; description = "Beat the weather back to the coastal extract." };
+      routeDescription = "Helicopter raid ahead of the front. Hover the buoy guns, then extract before the storm closes.";
     },
   ];
 
-  /// List all available flight plans (the level-select grid).
+  /// List all available missions (the level-select grid).
   public func listPlans() : [FlightPlan] {
     plans;
   };
 
-  /// Look up a single flight plan by id.
+  /// Look up a single mission by id.
   public func getPlan(planId : PlanId) : ?FlightPlan {
     plans.find(func(p) { p.id == planId });
   };
 
-  /// Return the two selectable planes with distinct handling.
+  /// Return the two selectable airframes.
   public func listPlanes() : [Plane] {
     planes;
   };

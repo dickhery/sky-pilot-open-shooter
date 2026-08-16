@@ -1,5 +1,12 @@
 import type { TouchAxes } from "@/hooks/useFlightControls";
-import { Camera, Hand, Music, Music2 } from "lucide-react";
+import {
+  Camera,
+  Crosshair,
+  Hand,
+  Music,
+  Music2,
+  UserRound,
+} from "lucide-react";
 import { useCallback, useRef } from "react";
 
 interface FlightTouchControlsProps {
@@ -53,6 +60,38 @@ export function FlightTouchControls({
           ) : (
             <Music className="h-5 w-5 opacity-50" aria-hidden="true" />
           )}
+        </button>
+        <button
+          type="button"
+          className="hud-label flex h-14 min-w-14 touch-manipulation select-none items-center justify-center rounded-full border border-primary/50 bg-primary/20 px-3 text-[10px] text-primary backdrop-blur [-webkit-tap-highlight-color:transparent]"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.currentTarget.setPointerCapture(e.pointerId);
+            touch.current.fire = true;
+          }}
+          onPointerUp={() => {
+            touch.current.fire = false;
+          }}
+          onPointerCancel={() => {
+            touch.current.fire = false;
+          }}
+          data-ocid="flight.touch.fire"
+        >
+          <span className="flex flex-col items-center gap-0.5">
+            <Crosshair className="h-4 w-4" aria-hidden="true" />
+            Fire
+          </span>
+        </button>
+        <button
+          type="button"
+          className="hud-label flex h-12 w-12 touch-manipulation items-center justify-center rounded-full border border-primary/40 bg-card/80 text-primary backdrop-blur select-none [-webkit-tap-highlight-color:transparent]"
+          onClick={() => {
+            touch.current.interact = true;
+          }}
+          aria-label="Board or dismount"
+          data-ocid="flight.touch.board"
+        >
+          <UserRound className="h-5 w-5" aria-hidden="true" />
         </button>
         <button
           type="button"

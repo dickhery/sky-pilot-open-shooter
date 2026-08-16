@@ -70,7 +70,7 @@ clusters use `gap-2`/`gap-3`; menu cards use `gap-6`.
 - Dark mode primary; light mode is the daytime-flight variant only.
 - No raw Tailwind palette colors — only semantic tokens.
 - No inline color/font styles — all via CSS variables and utilities.
-- Two planes, three weather conditions only — no extra variants.
+- Two airframes (strike jet, attack helicopter), plus hovercraft / on-foot, and three weather conditions.
 
 ## Signature Detail
 The horizon gradient (`bg-horizon`) behind the hero, paired with a JetBrains

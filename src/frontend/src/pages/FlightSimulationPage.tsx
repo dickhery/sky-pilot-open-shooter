@@ -4,7 +4,6 @@ import { FlightTouchControls } from "@/components/flight/FlightTouchControls";
 import { HUD } from "@/components/flight/HUD";
 import { ResultsScreen } from "@/components/flight/ResultsScreen";
 import {
-  APPROACH_SPEED_KTS,
   type LandingHint,
   ROTATE_SPEED_KTS,
   bearing,
@@ -13,6 +12,7 @@ import {
   createInitialFlightState,
   currentNavTarget,
   missionStep,
+  remainingInSector,
 } from "@/components/flight/flightPhysics";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,8 +23,15 @@ import {
 } from "@/hooks/useFlightAudio";
 import { useFlightControls } from "@/hooks/useFlightControls";
 import { useRecordFlightLog } from "@/hooks/useFlightData";
+import { FALLBACK_JET } from "@/lib/aircraft";
 import { useGameStore } from "@/store/gameStore";
-import type { FlightPhase, ScoreBreakdown, Weather } from "@/types/game";
+import type {
+  FlightPhase,
+  ScoreBreakdown,
+  VehicleMode,
+  Weather,
+} from "@/types/game";
+import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useNavigate } from "@tanstack/react-router";
 import { Plane as PlaneIcon, Rocket } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -117,6 +124,15 @@ export function FlightSimulationPage() {
   const [finalDuration, setFinalDuration] = useState(0);
 
   const recordMutation = useRecordFlightLog();
+  const { isAuthenticated } = useInternetIdentity();
+  const [vehicleMode, setVehicleMode] = useState<VehicleMode>("air");
+  const [combatHud, setCombatHud] = useState({
+    health: 100,
+    sectorsCleared: 0,
+    sectorTotal: 1,
+    targetsLeft: 0,
+    multiplier: 1,
+  });
 
   // Phase change handler passed into the scene.
   const handlePhaseChange = useCallback(
@@ -139,6 +155,15 @@ export function FlightSimulationPage() {
         airborne: s.airborne,
         landingHint: s.landingHint,
         step: missionStep(s.phase),
+      });
+      setVehicleMode(s.vehicleMode);
+      const sector = remainingInSector(s, layout);
+      setCombatHud({
+        health: s.playerHealth,
+        sectorsCleared: s.sectorsCleared,
+        sectorTotal: layout.sectors.length,
+        targetsLeft: sector?.left ?? 0,
+        multiplier: 1 + Math.max(0, s.sectorsCleared - 1) * 0.25,
       });
 
       if (s.phase === "crashed" || s.phase === "complete") {
@@ -170,7 +195,7 @@ export function FlightSimulationPage() {
   useEffect(() => {
     if ((phase !== "complete" && phase !== "crashed") || showResults) return;
     const s = flightState.current;
-    const computed = computeScore(s, layout, selectedPlane ?? fallbackPlane);
+    const computed = computeScore(s, layout, selectedPlane ?? FALLBACK_JET);
     setScoreState(computed);
     setScore(computed);
     setFinalDuration(s.elapsed);
@@ -180,13 +205,19 @@ export function FlightSimulationPage() {
       setPersisted(true);
       return;
     }
+    // Combat never writes the canister. One authenticated update at extract
+    // keeps cycle use bounded; unsigned sorties stay local-only.
+    if (!isAuthenticated) {
+      setPersisted(true);
+      return;
+    }
 
     recordMutation.mutate(
       {
         completedAt: BigInt(Date.now()),
         planName: selectedPlan.name,
         plane:
-          selectedPlane.id === "CessnaSkyhawk"
+          selectedPlane.id === "StrikeJet"
             ? BackendPlane.cessna
             : BackendPlane.gulfstream,
         weather: selectedPlan.weather,
@@ -209,6 +240,7 @@ export function FlightSimulationPage() {
     selectedPlan,
     setScore,
     recordMutation,
+    isAuthenticated,
   ]);
 
   // No plan/plane selected — bounce to flight plans.
@@ -224,7 +256,7 @@ export function FlightSimulationPage() {
             No flight plan selected
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Choose a flight plan and aircraft before taking off.
+            Choose a mission and airframe before dropping in.
           </p>
         </div>
         <Button
@@ -248,6 +280,9 @@ export function FlightSimulationPage() {
     selectedPlan.waypoint.name,
     selectedPlan.landing.name,
     landingHdg,
+    vehicleMode,
+    selectedPlane.canDismount,
+    combatHud.targetsLeft,
   );
 
   const handleRetry = () => {
@@ -293,6 +328,12 @@ export function FlightSimulationPage() {
         onToggleCockpit={toggleCockpit}
         musicOn={musicOn}
         onToggleMusic={toggleMusic}
+        vehicleMode={vehicleMode}
+        playerHealth={combatHud.health}
+        sectorsCleared={combatHud.sectorsCleared}
+        sectorTotal={combatHud.sectorTotal}
+        targetsLeft={combatHud.targetsLeft}
+        multiplier={combatHud.multiplier}
       />
       {!showResults && phase !== "crashed" && phase !== "complete" && (
         <FlightTouchControls
@@ -327,50 +368,46 @@ function getMissionBrief(
   waypointName: string,
   landingName: string,
   landingHdg: number,
+  vehicleMode: VehicleMode,
+  canDismount: boolean,
+  targetsLeft: number,
 ): { objective: string; subObjective?: string } {
   switch (phase) {
     case "takeoff":
       return airborne
         ? {
-            objective: `Fly to ${waypointName}`,
-            subObjective: "Follow the cyan marker ahead — climb to ~500 ft",
+            objective: `Strike ${waypointName}`,
+            subObjective: "Amber rings mark enemy outposts — fire with F",
           }
         : {
-            objective: "Take off from the departure runway",
-            subObjective: `Add power, then at ${ROTATE_SPEED_KTS} kt pull up (stick up / W) to rotate`,
+            objective: "Drop in from the FOB strip",
+            subObjective: `Add power, then at ${ROTATE_SPEED_KTS} kt pull up (W) to rotate`,
           };
     case "cruising":
       return {
-        objective: `Fly through the ${waypointName} rings`,
-        subObjective:
-          "Each cyan ring is a required gate — fly through the glowing one",
+        objective:
+          targetsLeft > 0
+            ? `Clear ${waypointName} — ${targetsLeft} targets left`
+            : `Push the next sector or extract at ${landingName}`,
+        subObjective: canDismount
+          ? "Hover, land, E to dismount. F fires. Extra sectors raise the multiplier."
+          : `Strafe the outpost, or land at the FOB and E onto the hovercraft. ${vehicleMode === "hovercraft" ? "Ground run armed." : ""}`,
       };
     case "landing":
       return {
-        objective: `Land on ${landingName}`,
-        subObjective: `Line up heading ${landingHdg.toString().padStart(3, "0")}° · slow to ${APPROACH_SPEED_KTS} kt · flare (stick up / W). A bad landing is a crash.`,
+        objective: `Extract at ${landingName}`,
+        subObjective: `Enter the green LZ · heading ${landingHdg.toString().padStart(3, "0")}° · hold brake / E. Or keep hunting for a multiplier.`,
       };
     case "crashed":
-      return { objective: "Flight over — the aircraft is down" };
+      return { objective: "Sortie over — the vehicle is down" };
     case "rollout":
       return {
-        objective: "Complete the landing rollout",
-        subObjective:
-          "Hold brake / Space below 20 kt — flight finishes automatically",
+        objective: "Hold in the extract zone",
+        subObjective: "Brake / Space or E finishes the mission",
       };
     case "complete":
-      return { objective: "Flight complete" };
+      return { objective: "Mission complete" };
     default:
-      return { objective: "Prepare for departure" };
+      return { objective: "Prepare for drop-in" };
   }
 }
-
-const fallbackPlane = {
-  id: "CessnaSkyhawk" as const,
-  name: "Cessna Skyhawk",
-  handling: "Stable trainer",
-  topSpeedKts: 120,
-  agility: 0.5,
-  stability: 0.8,
-  description: "",
-};

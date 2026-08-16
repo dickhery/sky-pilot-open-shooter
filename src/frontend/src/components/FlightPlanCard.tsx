@@ -84,7 +84,7 @@ export function FlightPlanCard({
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-1">
               <span className="hud-label text-[10px] text-muted-foreground">
-                Plan {String(index + 1).padStart(2, "0")}
+                Mission {String(index + 1).padStart(2, "0")}
               </span>
               <CardTitle className="font-display text-lg leading-tight tracking-tight text-foreground">
                 {plan.name}
@@ -124,12 +124,12 @@ export function FlightPlanCard({
           <div className="flex flex-col gap-2">
             <p className="hud-label flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <Waypoints className="h-3.5 w-3.5" aria-hidden="true" />
-              Route
+              Theater
             </p>
             <ol className="flex flex-col gap-1.5 text-xs">
               <li className="flex items-center gap-2 text-foreground">
                 <span className="hud-label w-16 shrink-0 text-[10px] text-muted-foreground">
-                  Depart
+                  Drop
                 </span>
                 <span className="truncate font-medium">
                   {plan.departure.name}
@@ -137,13 +137,13 @@ export function FlightPlanCard({
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <span className="hud-label w-16 shrink-0 text-[10px] text-muted-foreground">
-                  Via
+                  Sector
                 </span>
                 <span className="truncate">{plan.waypoint.name}</span>
               </li>
               <li className="flex items-center gap-2 text-foreground">
                 <span className="hud-label w-16 shrink-0 text-[10px] text-muted-foreground">
-                  Arrive
+                  Extract
                 </span>
                 <span className="truncate font-medium">
                   {plan.landing.name}
@@ -168,7 +168,7 @@ export function FlightPlanCard({
             }`}
             data-ocid={`flight-plans.select_button.${index + 1}`}
           >
-            {isSelected ? "Armed — Begin Flight" : "Select Plan"}
+            {isSelected ? "Armed — Begin Sortie" : "Select Mission"}
           </span>
         </CardFooter>
       </button>

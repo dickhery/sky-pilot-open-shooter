@@ -11,11 +11,28 @@ export type MapTheme =
   | "valley"
   | "storm";
 
+export type TargetKind = "turret" | "bunker" | "radar" | "truck";
+
 export interface Checkpoint {
   id: string;
   name: string;
   position: THREE.Vector3;
   radius: number;
+}
+
+export interface OutpostTarget {
+  id: string;
+  kind: TargetKind;
+  position: THREE.Vector3;
+  hp: number;
+}
+
+export interface Sector {
+  id: string;
+  name: string;
+  center: THREE.Vector3;
+  radius: number;
+  targets: OutpostTarget[];
 }
 
 export interface SceneLayout {
@@ -29,9 +46,12 @@ export interface SceneLayout {
   landingThreshold: THREE.Vector3;
   landingHeading: number;
   landingEnd: THREE.Vector3;
+  sectors: Sector[];
+  hoverPad: THREE.Vector3;
+  extractRadius: number;
 }
 
-const GATE = 18;
+const GATE = 22;
 
 function along(
   x: number,
@@ -75,28 +95,60 @@ function strip(
   };
 }
 
+function tgt(
+  id: string,
+  kind: TargetKind,
+  x: number,
+  z: number,
+  hp: number,
+): OutpostTarget {
+  const y = kind === "radar" ? 2.4 : kind === "bunker" ? 1.5 : 1.15;
+  return { id, kind, position: new THREE.Vector3(x, y, z), hp };
+}
+
+function outpost(id: string, name: string, x: number, z: number): Sector {
+  return {
+    id,
+    name,
+    center: new THREE.Vector3(x, 0, z),
+    radius: 78,
+    targets: [
+      tgt(`${id}-turret`, "turret", x + 10, z - 8, 40),
+      tgt(`${id}-bunker`, "bunker", x - 12, z + 6, 70),
+      tgt(`${id}-radar`, "radar", x + 6, z + 16, 35),
+      tgt(`${id}-truck`, "truck", x - 18, z - 14, 28),
+    ],
+  };
+}
+
 function pack(
   planId: number,
   theme: MapTheme,
   dep: ReturnType<typeof strip>,
   landing: ReturnType<typeof strip>,
-  checkpoints: Checkpoint[],
+  sectors: Sector[],
+  hoverPad: THREE.Vector3,
 ): SceneLayout {
+  const checkpoints = sectors.map((s) =>
+    gate(s.id, s.name, s.center.x, 36, s.center.z),
+  );
   return {
     planId,
     theme,
     departureStart: dep.start,
     departureEnd: dep.end,
     departureHeading: dep.heading,
-    waypoint: checkpoints[1]?.position ?? checkpoints[0].position,
+    waypoint: checkpoints[0]?.position ?? landing.start,
     checkpoints,
     landingThreshold: landing.start,
     landingEnd: landing.end,
     landingHeading: landing.heading,
+    sectors,
+    hoverPad,
+    extractRadius: 48,
   };
 }
 
-/** Morning Coastal Hop — left along the water to a lighthouse, then inland. */
 function coastLayout(): SceneLayout {
   const h0 = 0;
   return pack(
@@ -105,14 +157,14 @@ function coastLayout(): SceneLayout {
     strip(0, 0, h0, 150, 150),
     strip(90, -1780, 0, 0, 260),
     [
-      gate("climbout", "Climb-out", 20, 70, -460),
-      gate("waypoint", "Lighthouse Point", -260, 76, -860),
-      gate("final", "Marsh Final", 70, 40, -1540),
+      outpost("battery", "Lighthouse Battery", -260, -860),
+      outpost("ridge", "Coastal Ridge", 170, -1280),
+      outpost("depot", "Marsh Depot", 40, -1580),
     ],
+    new THREE.Vector3(28, 0.02, 18),
   );
 }
 
-/** Midday Crosswind Run — climb a ridge pass, land on a plateau to the right. */
 function ridgeLayout(): SceneLayout {
   const hDep = 0.32;
   const hLand = 0.22;
@@ -122,14 +174,14 @@ function ridgeLayout(): SceneLayout {
     strip(-60, 40, hDep, 130, 140),
     strip(460, -1680, hLand, 0, 280),
     [
-      gate("climbout", "Ridge Climb", 90, 98, -400),
-      gate("waypoint", "Ridge Pass", 300, 118, -880),
-      gate("final", "Plateau Final", 430, 52, -1420),
+      outpost("climb", "Ridge Climb", 90, -400),
+      outpost("pass", "Ridge Pass Camp", 300, -880),
+      outpost("plateau", "Plateau Nest", 420, -1380),
     ],
+    new THREE.Vector3(-28, 0.02, 70),
   );
 }
 
-/** Midnight Harbor Approach — swing right over water to a beacon, come back. */
 function harborLayout(): SceneLayout {
   const hDep = -0.7;
   const hLand = 2.55;
@@ -139,14 +191,14 @@ function harborLayout(): SceneLayout {
     strip(0, 20, hDep, 140, 140),
     strip(180, -920, hLand, 0, 240),
     [
-      gate("climbout", "Harbor Climb", 260, 68, -300),
-      gate("waypoint", "Harbor Beacon", 540, 72, -80),
-      gate("final", "Harbor Final", 320, 42, -640),
+      outpost("wharf", "Beacon Wharf", 540, -80),
+      outpost("docks", "East Docks", 360, -360),
+      outpost("radar", "Harbor Radar", 300, -640),
     ],
+    new THREE.Vector3(24, 0.02, 50),
   );
 }
 
-/** Night Express — take off south, circle a tower, land back to the north. */
 function cityLayout(): SceneLayout {
   const hDep = Math.PI;
   const hLand = -0.18;
@@ -156,14 +208,14 @@ function cityLayout(): SceneLayout {
     strip(0, 80, hDep, 130, 140),
     strip(210, -40, hLand, 0, 250),
     [
-      gate("climbout", "Downtown", 70, 82, 480),
-      gate("waypoint", "City Tower", 340, 92, 640),
-      gate("final", "Uptown Final", 260, 48, 180),
+      outpost("downtown", "Downtown Block", 70, 480),
+      outpost("tower", "Tower District", 340, 640),
+      outpost("uptown", "Uptown Yard", 260, 180),
     ],
+    new THREE.Vector3(-26, 0.02, 50),
   );
 }
 
-/** Cloudy Valley Tour — fly the valley floor to the right, land at the far end. */
 function valleyLayout(): SceneLayout {
   const hDep = -0.7;
   const hLand = 0.35;
@@ -173,14 +225,14 @@ function valleyLayout(): SceneLayout {
     strip(80, 20, hDep, 100, 140),
     strip(120, -1240, hLand, 0, 250),
     [
-      gate("climbout", "Valley Climb", 140, 88, -220),
-      gate("waypoint", "Cloud Gap", 360, 105, -560),
-      gate("final", "Overlook Final", 180, 48, -980),
+      outpost("gap", "Cloud Gap Camp", 360, -560),
+      outpost("river", "River Nest", 200, -820),
+      outpost("overlook", "Overlook Guns", 160, -1080),
     ],
+    new THREE.Vector3(108, 0.02, 40),
   );
 }
 
-/** Storm Front Sprint — out to a buoy over open water, then back to the coast. */
 function stormLayout(): SceneLayout {
   const hDep = -2.2;
   const hLand = 0.95;
@@ -190,14 +242,15 @@ function stormLayout(): SceneLayout {
     strip(20, 40, hDep, 130, 140),
     strip(-80, 420, hLand, 0, 250),
     [
-      gate("climbout", "Offshore", 320, 70, -80),
-      gate("waypoint", "Weather Buoy", 620, 64, 160),
-      gate("final", "Coastal Final", 180, 42, 320),
+      outpost("offshore", "Offshore Guns", 320, -80),
+      outpost("buoy", "Buoy Battery", 620, 160),
+      outpost("spit", "Spit Camp", 160, 280),
     ],
+    new THREE.Vector3(48, 0.02, 20),
   );
 }
 
-/** Build the course and scenery theme for a backend flight-plan id (1–6). */
+/** Build the theater and scenery theme for a backend mission id (1–6). */
 export function buildSceneLayout(planId = 1): SceneLayout {
   switch (planId) {
     case 2:
@@ -254,22 +307,45 @@ export function stripClearance(
   const uz = az / len;
   const dx = x - start.x;
   const dz = z - start.z;
-  const along = dx * ux + dz * uz;
+  const alongDist = dx * ux + dz * uz;
   const across = dx * -uz + dz * ux;
-  const alongClamped = THREE.MathUtils.clamp(along, -endPad, len + endPad);
-  const alongOff = along - alongClamped;
+  const alongClamped = THREE.MathUtils.clamp(alongDist, -endPad, len + endPad);
+  const alongOff = alongDist - alongClamped;
   const dist = Math.hypot(across, alongOff);
   return THREE.MathUtils.smoothstep(halfWidth, halfWidth * 0.28, dist);
 }
 
-/** 1 = fully graded airfield, 0 = untouched countryside. */
+function radialClearance(
+  x: number,
+  z: number,
+  cx: number,
+  cz: number,
+  outer: number,
+  inner: number,
+): number {
+  const d = Math.hypot(x - cx, z - cz);
+  return THREE.MathUtils.smoothstep(outer, inner, d);
+}
+
+/** 1 = fully graded airfield / outpost, 0 = untouched countryside. */
 export function airfieldClearance(
   layout: SceneLayout,
   x: number,
   z: number,
 ): number {
-  return Math.max(
+  let grade = Math.max(
     stripClearance(x, z, layout.departureStart, layout.departureEnd),
     stripClearance(x, z, layout.landingThreshold, layout.landingEnd),
   );
+  grade = Math.max(
+    grade,
+    radialClearance(x, z, layout.hoverPad.x, layout.hoverPad.z, 22, 8),
+  );
+  for (const sector of layout.sectors) {
+    grade = Math.max(
+      grade,
+      radialClearance(x, z, sector.center.x, sector.center.z, 36, 12),
+    );
+  }
+  return grade;
 }

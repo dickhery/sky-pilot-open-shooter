@@ -95,7 +95,7 @@ export function ResultsScreen({
         <div className="flex items-center justify-between border-b border-border pb-4">
           <div>
             <p className="hud-label text-[10px] text-muted-foreground">
-              {crashed ? "Aircraft Down" : "Flight Complete"}
+              {crashed ? "Vehicle Down" : "Mission Complete"}
             </p>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">
               {crashed ? "Crashed" : (plan?.name ?? "Flight")}
@@ -128,23 +128,23 @@ export function ResultsScreen({
           <div className="mt-5 space-y-3" data-ocid="flight.results.breakdown">
             <ScoreRow
               icon={<Gauge className="h-4 w-4" aria-hidden="true" />}
-              label="Speed"
+              label="Tempo"
               value={score.speed}
-              description="Time to complete route"
+              description="Time to clear and extract"
               dataOcid="flight.results.speed"
             />
             <ScoreRow
               icon={<Award className="h-4 w-4" aria-hidden="true" />}
-              label="Landing Smoothness"
+              label="Accuracy"
               value={score.landingSmoothness}
-              description="Descent rate at touchdown"
+              description="Hits, hull remaining"
               dataOcid="flight.results.smoothness"
             />
             <ScoreRow
               icon={<Crosshair className="h-4 w-4" aria-hidden="true" />}
-              label="Runway Alignment"
+              label="Extract"
               value={score.runwayAlignment}
-              description="Centerline accuracy"
+              description="LZ quality and sector multiplier"
               dataOcid="flight.results.alignment"
             />
           </div>
@@ -161,7 +161,7 @@ export function ResultsScreen({
               <span className="hud-label text-primary">
                 {crashed
                   ? "Crash not logged — no score earned"
-                  : "Logged to flight logbook"}
+                  : "Logged to after-action report"}
               </span>
             </>
           ) : (
@@ -205,7 +205,7 @@ export function ResultsScreen({
                       displayName: displayName.trim(),
                       planName: plan.name,
                       plane:
-                        plane.id === "CessnaSkyhawk"
+                        plane.id === "StrikeJet"
                           ? BackendPlane.cessna
                           : BackendPlane.gulfstream,
                       weather: plan.weather,
@@ -268,7 +268,7 @@ export function ResultsScreen({
             data-ocid="flight.results.retry_button"
           >
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
-            Retry Flight
+            Retry Sortie
           </Button>
           <Button
             variant="secondary"

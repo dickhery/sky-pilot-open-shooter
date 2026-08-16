@@ -44,17 +44,17 @@ export function FlightPlansPage() {
           </span>
           <div className="flex flex-col">
             <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Flight Plans
+              Missions
             </h1>
             <p className="hud-label text-[10px] text-muted-foreground">
-              Select a route to begin your flight
+              Select a theater to drop in
             </p>
           </div>
         </div>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Each plan defines a departure runway, a string of fly-through gates,
-          and a landing runway. Choose your aircraft and weather, then arm the
-          plan to take off.
+          Each mission is a bounded theater: drop in, clear enemy outposts for a
+          sector multiplier, then extract — or switch to a hovercraft or go on
+          foot for closer work.
         </p>
       </header>
 
@@ -83,7 +83,7 @@ export function FlightPlansPage() {
           <AlertTriangle className="h-8 w-8 text-accent" aria-hidden="true" />
           <div className="flex flex-col gap-1">
             <p className="font-display text-lg font-semibold text-foreground">
-              Unable to load flight plans
+              Unable to load missions
             </p>
             <p className="max-w-md text-sm text-muted-foreground">
               {error instanceof Error
@@ -114,11 +114,11 @@ export function FlightPlansPage() {
           </span>
           <div className="flex flex-col gap-1">
             <p className="font-display text-lg font-semibold text-foreground">
-              No flight plans available
+              No missions available
             </p>
             <p className="max-w-md text-sm text-muted-foreground">
-              Flight plans are published by the operations team. Check back
-              shortly for new routes.
+              Missions are published by operations. Check back shortly for new
+              theaters.
             </p>
           </div>
         </div>

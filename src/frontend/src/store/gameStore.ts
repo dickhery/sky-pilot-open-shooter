@@ -1,4 +1,5 @@
 import type { FlightPlan } from "@/backend";
+import { derivePlaneFromCatalog } from "@/lib/aircraft";
 import type {
   FlightPhase,
   Plane,
@@ -8,37 +9,15 @@ import type {
 } from "@/types/game";
 import { create } from "zustand";
 
-/**
- * Derive a frontend `Plane` from the plane record carried on a backend
- * `FlightPlan`. That record only has `{ id, name, handling }`; the
- * frontend `Plane` adds numeric specs used by the flight model.
- */
-function derivePlaneFromBackend(backendPlane: FlightPlan["plane"]): Plane {
-  const isCessna = backendPlane.id === 1n;
-  const id: PlaneId = isCessna ? "CessnaSkyhawk" : "Extra300";
-  return {
-    id,
-    name: backendPlane.name,
-    handling: backendPlane.handling,
-    topSpeedKts: isCessna ? 120 : 180,
-    agility: isCessna ? 0.5 : 0.85,
-    stability: isCessna ? 0.8 : 0.55,
-    description: backendPlane.handling,
-  };
-}
-
 interface GameState {
-  // ── Selection ──────────────────────────────────────────────────────────
   selectedPlan: FlightPlan | null;
   selectedPlane: Plane | null;
   selectedPlaneId: PlaneId | null;
   selectedWeather: Weather;
 
-  // ── Runtime flight state ──────────────────────────────────────────────
   phase: FlightPhase;
   score: ScoreBreakdown;
 
-  // ── Actions ───────────────────────────────────────────────────────────
   selectPlan: (plan: FlightPlan) => void;
   selectPlane: (plane: Plane) => void;
   selectPlaneById: (id: PlaneId) => void;
@@ -64,15 +43,18 @@ export const useGameStore = create<GameState>((set) => ({
   phase: "idle",
   score: emptyScore,
 
-  selectPlan: (plan) =>
+  selectPlan: (plan) => {
+    const selectedPlane = derivePlaneFromCatalog(
+      plan.plane.name,
+      plan.plane.handling,
+      plan.plane.id,
+    );
     set({
       selectedPlan: plan,
-      // Each backend FlightPlan already carries its plane; derive the
-      // frontend Plane so FlightSimulationPage can proceed without a
-      // separate plane-selection step.
-      selectedPlane: derivePlaneFromBackend(plan.plane),
-      selectedPlaneId: derivePlaneFromBackend(plan.plane).id,
-    }),
+      selectedPlane,
+      selectedPlaneId: selectedPlane.id,
+    });
+  },
   selectPlane: (plane) =>
     set({ selectedPlane: plane, selectedPlaneId: plane.id }),
   selectPlaneById: (id) => set({ selectedPlaneId: id }),

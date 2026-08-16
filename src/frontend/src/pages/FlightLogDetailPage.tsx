@@ -1,10 +1,11 @@
-import type { Plane, Weather } from "@/backend";
+import type { Weather } from "@/backend";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFlightLog } from "@/hooks/useFlightData";
+import { BACKEND_PLANE_LABEL } from "@/lib/aircraft";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -18,11 +19,6 @@ import {
   Trophy,
 } from "lucide-react";
 import { motion } from "motion/react";
-
-const planeLabel: Record<Plane, string> = {
-  cessna: "Cessna Skyhawk",
-  gulfstream: "Gulfstream G650",
-};
 
 const weatherVariant: Record<Weather, { label: string; className: string }> = {
   daytime: {
@@ -283,7 +279,7 @@ export function FlightLogDetailPage() {
                   data-ocid="flight-log-detail.plane_badge"
                 >
                   <PlaneIcon className="size-3" aria-hidden="true" />
-                  {planeLabel[log.plane] ?? log.plane}
+                  {BACKEND_PLANE_LABEL[log.plane] ?? log.plane}
                 </Badge>
               </div>
             </CardHeader>
@@ -340,7 +336,7 @@ export function FlightLogDetailPage() {
                     aria-hidden="true"
                   />
                 }
-                label="Speed"
+                label="Tempo"
                 value={log.score.speed}
                 marker="flight-log-detail.speed_score"
                 accent="primary"
@@ -352,7 +348,7 @@ export function FlightLogDetailPage() {
                     aria-hidden="true"
                   />
                 }
-                label="Landing Smoothness"
+                label="Accuracy"
                 value={log.score.landingSmoothness}
                 marker="flight-log-detail.landing_score"
                 accent="accent"
@@ -424,7 +420,7 @@ export function FlightLogDetailPage() {
                       Aircraft
                     </dt>
                     <dd className="truncate text-sm text-foreground">
-                      {planeLabel[log.plane] ?? log.plane}
+                      {BACKEND_PLANE_LABEL[log.plane] ?? log.plane}
                     </dd>
                   </div>
                 </div>

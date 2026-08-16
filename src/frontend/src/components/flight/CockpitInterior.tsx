@@ -25,11 +25,11 @@ export function CockpitInterior({
   flightState,
   axes,
 }: CockpitInteriorProps) {
-  const isCessna = planeId === "CessnaSkyhawk";
-  const dash = isCessna ? "#2a323c" : "#1a1c22";
-  const leather = isCessna ? "#4a3224" : "#2a1c18";
-  const body = isCessna ? "#f4f7fb" : "#161c28";
-  const accent = isCessna ? "#1a8fa4" : "#e8a030";
+  const isJet = planeId === "StrikeJet";
+  const dash = isJet ? "#1c2218" : "#161a14";
+  const leather = isJet ? "#2a3224" : "#24281c";
+  const body = isJet ? "#3d4638" : "#2f3828";
+  const accent = isJet ? "#c4a24a" : "#8a6a28";
   const yokeRef = useRef<THREE.Group>(null);
   const thrRef = useRef<THREE.Mesh>(null);
   const asi = useRef<THREE.Group>(null);

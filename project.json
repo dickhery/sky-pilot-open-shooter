@@ -1,19 +1,20 @@
 {
-  "overview": "A 3D flight simulator where players pick a flight plan, take off, fly to a guided destination, land, and get scored on speed and landing smoothness.",
+  "overview": "A hybrid air-to-ground open shooter: fly a strike jet or attack helicopter over a bounded theater, land or switch to a hovercraft, clear enemy outposts, then extract — or push the next sector for a multiplier.",
   "features": [
-    "Main menu with Flight Logs, Flight Plans, and Flight School navigation",
-    "Flight Plans level select with Daytime, Nighttime, and Partly Cloudy conditions plus two plane choices",
-    "3D flight simulation with takeoff, guided navigation, and landing phases",
-    "Scoring on flight speed and landing smoothness based on runway alignment",
-    "Flight Logs history page with persisted past flights and score breakdowns",
-    "Flight School with controls reference and how-to-play walkthrough"
+    "Main menu with After-Action Logs, Missions, Briefing Room, and Leaderboard",
+    "Six bounded theaters with Daytime, Nighttime, and Partly Cloudy conditions",
+    "F-27 Viper strike jet and AH-9 Spectre attack helicopter, plus hovercraft and on-foot combat",
+    "Arcade loop: drop in, clear sectors, extract or continue for multipliers",
+    "Client-side combat with a single authenticated canister write on extract",
+    "After-action logs and a capped public leaderboard"
   ],
   "category": "game",
   "tags": [
-    "flight-simulator",
+    "open-shooter",
     "3d-game",
-    "aviation",
+    "combat-flight",
+    "helicopter",
     "interactive"
   ],
-  "last_updated": "2026-07-02T10:09:16.633Z"
+  "last_updated": "2026-08-16T12:00:00.000Z"
 }

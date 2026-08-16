@@ -11,6 +11,8 @@ export interface ControlAxes {
   roll: number;
   throttle: number;
   brakes: boolean;
+  fire: boolean;
+  interact: boolean;
 }
 
 export interface TouchAxes {
@@ -19,6 +21,8 @@ export interface TouchAxes {
   /** Absolute 0–1 while the slider is held; null when idle. */
   throttle: number | null;
   brakes: boolean;
+  fire: boolean;
+  interact: boolean;
 }
 
 export interface FlightControls {
@@ -57,12 +61,16 @@ export function useFlightControls(options?: {
     roll: 0,
     throttle: 0.25,
     brakes: false,
+    fire: false,
+    interact: false,
   });
   const touch = useRef<TouchAxes>({
     pitch: 0,
     roll: 0,
     throttle: null,
     brakes: false,
+    fire: false,
+    interact: false,
   });
   const keys = useRef<Set<string>>(new Set());
   const target = useRef({ pitch: 0, roll: 0 });
@@ -79,6 +87,8 @@ export function useFlightControls(options?: {
     axes.current.pitch = 0;
     axes.current.roll = 0;
     axes.current.brakes = false;
+    axes.current.fire = false;
+    axes.current.interact = false;
     setBrakesOn(false);
   }, [enabled]);
 
@@ -100,6 +110,11 @@ export function useFlightControls(options?: {
         -1,
         1,
       );
+      axes.current.fire = k.has("KeyF") || k.has("Mouse0") || t.fire;
+      if (t.interact) {
+        axes.current.interact = true;
+        t.interact = false;
+      }
       return k.has("Space") || t.brakes;
     };
 
@@ -144,6 +159,16 @@ export function useFlightControls(options?: {
         setCockpitView((v) => !v);
         return;
       }
+      if (e.code === "KeyE" && !e.repeat) {
+        e.preventDefault();
+        axes.current.interact = true;
+        return;
+      }
+      if (e.code === "KeyF") {
+        e.preventDefault();
+        keys.current.add("KeyF");
+        return;
+      }
       const action = KEY_MAP[e.code];
       if (!action) return;
       if (
@@ -157,8 +182,26 @@ export function useFlightControls(options?: {
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "KeyF") {
+        keys.current.delete("KeyF");
+        return;
+      }
+      if (e.code === "KeyE") {
+        axes.current.interact = false;
+        return;
+      }
       if (isTypingTarget(e.target) || !KEY_MAP[e.code]) return;
       keys.current.delete(e.code);
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (!enabledRef.current || isTypingTarget(e.target) || e.button !== 0) {
+        return;
+      }
+      keys.current.add("Mouse0");
+    };
+    const onMouseUp = (e: MouseEvent) => {
+      if (e.button === 0) keys.current.delete("Mouse0");
     };
 
     const onBlur = () => {
@@ -167,11 +210,15 @@ export function useFlightControls(options?: {
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mouseup", onMouseUp);
     window.addEventListener("blur", onBlur);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mouseup", onMouseUp);
       window.removeEventListener("blur", onBlur);
     };
   }, []);

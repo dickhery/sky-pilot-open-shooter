@@ -13,11 +13,8 @@ interface ControlAxesLike {
 
 interface PlaneModelProps {
   planeId: PlaneId;
-  /** Live control axes — read each frame so the prop disc tracks throttle. */
   axes: React.MutableRefObject<ControlAxesLike>;
-  /** Live flight state — gear and lights follow airborne / speed. */
   flightState: React.MutableRefObject<FlightState>;
-  /** Hide the exterior canopy fill when the camera is in the seat. */
   cockpitView?: boolean;
 }
 
@@ -28,40 +25,34 @@ interface Palette {
   glass: string;
   wing: string;
   stripe: string;
-  spinner: string;
-  interior: string;
 }
 
-function makeFuselage(isCessna: boolean): THREE.LatheGeometry {
-  const pts = isCessna
+function makeFuselage(isJet: boolean): THREE.LatheGeometry {
+  const pts = isJet
     ? [
-        [0.01, -2.55],
-        [0.16, -2.38],
-        [0.28, -2.12],
-        [0.36, -1.7],
-        [0.4, -1.15],
-        [0.42, -0.45],
-        [0.43, 0.15],
-        [0.41, 0.75],
-        [0.36, 1.35],
-        [0.28, 1.9],
-        [0.2, 2.3],
-        [0.12, 2.62],
-        [0.04, 2.82],
+        [0.01, -3.15],
+        [0.12, -2.95],
+        [0.22, -2.55],
+        [0.32, -1.9],
+        [0.38, -1.1],
+        [0.4, -0.2],
+        [0.38, 0.7],
+        [0.32, 1.5],
+        [0.24, 2.2],
+        [0.16, 2.75],
+        [0.08, 3.15],
+        [0.02, 3.35],
       ]
     : [
-        [0.01, -2.45],
-        [0.14, -2.28],
-        [0.24, -2.02],
-        [0.3, -1.55],
-        [0.33, -0.95],
-        [0.34, -0.25],
-        [0.33, 0.4],
-        [0.3, 1.0],
-        [0.24, 1.55],
-        [0.17, 2.05],
-        [0.1, 2.42],
-        [0.03, 2.65],
+        [0.02, -2.05],
+        [0.28, -1.7],
+        [0.42, -1.1],
+        [0.5, -0.3],
+        [0.52, 0.4],
+        [0.46, 1.1],
+        [0.32, 1.7],
+        [0.18, 2.15],
+        [0.08, 2.55],
       ];
   const vectors = pts.map(([x, y]) => new THREE.Vector2(x, y));
   const geo = new THREE.LatheGeometry(vectors, 28);
@@ -134,93 +125,80 @@ function makeFin(
 }
 
 /**
- * Procedural single-engine aircraft built from lathed / extruded surfaces
- * rather than boxes, so the silhouette reads as a real airframe.
- *
- * CessnaSkyhawk: high-wing trainer, strut-braced, tricycle gear, white/teal.
- * Extra300: low-wing aerobat, clipped wings, dark/gold livery.
+ * Procedural military airframes. Strike jet is a twin-intake fighter;
+ * Spectre is a stub-winged attack helicopter with a spinning rotor.
  */
 export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
   function PlaneModel(
     { planeId, axes, flightState, cockpitView = false },
     ref,
   ) {
-    const isCessna = planeId === "CessnaSkyhawk";
-    const propRef = useRef<THREE.Group>(null);
-    const discRef = useRef<THREE.Mesh>(null);
-    const bladesRef = useRef<THREE.Group>(null);
+    const isJet = planeId === "StrikeJet";
+    const rotorRef = useRef<THREE.Group>(null);
+    const tailRotorRef = useRef<THREE.Group>(null);
     const gearRef = useRef<THREE.Group>(null);
     const lightRef = useRef<THREE.PointLight>(null);
     const shakeRef = useRef<THREE.Group>(null);
 
     const colors = useMemo<Palette>(
       () =>
-        isCessna
+        isJet
           ? {
-              body: "#f4f7fb",
-              accent: "#1a8fa4",
-              trim: "#0c4e59",
-              glass: "#8fd4e8",
-              wing: "#eef3f8",
-              stripe: "#d4532a",
-              spinner: "#1a8fa4",
-              interior: "#2a3340",
+              body: "#3d4638",
+              accent: "#6b7a58",
+              trim: "#1c2218",
+              glass: "#7aa0b0",
+              wing: "#454e3e",
+              stripe: "#c4a24a",
             }
           : {
-              body: "#161c28",
-              accent: "#e8a030",
-              trim: "#6e4418",
-              glass: "#6a8094",
-              wing: "#1c2434",
-              stripe: "#f0b040",
-              spinner: "#e8a030",
-              interior: "#0e1218",
+              body: "#2f3828",
+              accent: "#4a553c",
+              trim: "#1a1e16",
+              glass: "#6a8894",
+              wing: "#3a4432",
+              stripe: "#8a6a28",
             },
-      [isCessna],
+      [isJet],
     );
 
-    const fuselage = useMemo(() => makeFuselage(isCessna), [isCessna]);
+    const fuselage = useMemo(() => makeFuselage(isJet), [isJet]);
     const wing = useMemo(
       () =>
-        isCessna
-          ? makeWing(8.4, 1.55, 0.95, 0.11, 0.12)
-          : makeWing(6.5, 1.45, 0.72, 0.1, 0.28),
-      [isCessna],
+        isJet
+          ? makeWing(8.6, 2.4, 0.55, 0.1, 1.55)
+          : makeWing(5.4, 1.15, 0.7, 0.08, 0.12),
+      [isJet],
     );
     const stab = useMemo(
       () =>
-        isCessna
-          ? makeWing(2.85, 0.95, 0.62, 0.07, 0.18)
-          : makeWing(2.45, 0.85, 0.5, 0.065, 0.22),
-      [isCessna],
+        isJet
+          ? makeWing(3.4, 1.05, 0.42, 0.07, 0.55)
+          : makeWing(2.2, 0.7, 0.4, 0.06, 0.12),
+      [isJet],
     );
     const fin = useMemo(
       () =>
-        isCessna
-          ? makeFin(1.35, 1.05, 0.55, 0.08, 0.28)
-          : makeFin(1.15, 0.95, 0.48, 0.075, 0.32),
-      [isCessna],
+        isJet
+          ? makeFin(1.55, 1.25, 0.45, 0.07, 0.55)
+          : makeFin(1.05, 0.85, 0.4, 0.07, 0.22),
+      [isJet],
     );
-
-    const wingY = isCessna ? 0.78 : -0.18;
-    const wingZ = isCessna ? 0.05 : 0.12;
-    const bladeCount = isCessna ? 2 : 3;
-    const bladeLen = isCessna ? 1.15 : 1.02;
 
     useFrame((state, delta) => {
       const throttle = axes.current.throttle;
       const airborne = flightState.current.airborne;
-      const rpm = 3 + throttle * 52;
-
-      if (propRef.current) {
-        propRef.current.rotation.z += delta * rpm;
-      }
-      if (bladesRef.current && discRef.current) {
-        const blurred = throttle > 0.22;
-        bladesRef.current.visible = !blurred;
-        discRef.current.visible = blurred;
-        const mat = discRef.current.material as THREE.MeshBasicMaterial;
-        mat.opacity = 0.18 + throttle * 0.28;
+      if (isJet) {
+        if (shakeRef.current) {
+          const shake = throttle * 0.005;
+          shakeRef.current.position.y =
+            Math.sin(state.clock.elapsedTime * 80) * shake;
+        }
+      } else if (rotorRef.current) {
+        rotorRef.current.rotation.y += delta * (6 + throttle * 28);
+        if (tailRotorRef.current) {
+          tailRotorRef.current.rotation.x += delta * (10 + throttle * 36);
+        }
       }
       if (gearRef.current) {
         gearRef.current.visible = !airborne && !cockpitView;
@@ -228,103 +206,19 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
       if (lightRef.current) {
         lightRef.current.intensity = airborne ? 0.15 : 0.55;
       }
-      if (shakeRef.current) {
-        const shake = throttle * 0.006;
-        shakeRef.current.position.y =
-          Math.sin(state.clock.elapsedTime * 67) * shake;
-      }
     });
 
     return (
       <group ref={ref}>
         <group ref={shakeRef}>
-          {/* Fuselage — hidden in POV so the lathe cannot clip the near
-              plane and paint a black slab across the windshield. */}
           <mesh geometry={fuselage} castShadow visible={!cockpitView}>
             <meshStandardMaterial
               color={colors.body}
-              metalness={0.22}
-              roughness={0.38}
-              envMapIntensity={0.6}
+              metalness={0.38}
+              roughness={0.42}
+              envMapIntensity={0.55}
             />
           </mesh>
-
-          {/* Nose cowl, spinner, and prop sit inside the POV frustum and
-              read as a floating blob in the windshield — hide them there. */}
-          <mesh
-            position={[0, 0.02, -2.18]}
-            rotation={[Math.PI / 2, 0, 0]}
-            visible={!cockpitView}
-          >
-            <torusGeometry args={[0.3, 0.045, 10, 24]} />
-            <meshStandardMaterial
-              color={colors.accent}
-              metalness={0.45}
-              roughness={0.32}
-            />
-          </mesh>
-          <mesh
-            position={[0, 0.02, -2.42]}
-            rotation={[Math.PI / 2, 0, 0]}
-            visible={!cockpitView}
-          >
-            <sphereGeometry
-              args={[0.16, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.6]}
-            />
-            <meshStandardMaterial
-              color={colors.spinner}
-              metalness={0.55}
-              roughness={0.25}
-            />
-          </mesh>
-          <mesh
-            position={[0, 0.02, -2.55]}
-            rotation={[Math.PI / 2, 0, 0]}
-            visible={!cockpitView}
-          >
-            <coneGeometry args={[0.09, 0.22, 14]} />
-            <meshStandardMaterial
-              color={colors.spinner}
-              metalness={0.55}
-              roughness={0.25}
-            />
-          </mesh>
-
-          {/* Propeller */}
-          <group
-            ref={propRef}
-            position={[0, 0.02, -2.5]}
-            visible={!cockpitView}
-          >
-            <group ref={bladesRef}>
-              {(isCessna ? ["port", "starboard"] : ["a", "b", "c"]).map(
-                (id, i) => (
-                  <mesh
-                    key={`blade-${id}`}
-                    rotation={[0, 0, (i * Math.PI * 2) / bladeCount]}
-                    position={[0, bladeLen * 0.42, 0]}
-                  >
-                    <boxGeometry args={[0.09, bladeLen, 0.025]} />
-                    <meshStandardMaterial
-                      color="#2c3036"
-                      metalness={0.55}
-                      roughness={0.35}
-                    />
-                  </mesh>
-                ),
-              )}
-            </group>
-            <mesh ref={discRef} visible={false} rotation={[0, 0, 0]}>
-              <circleGeometry args={[bladeLen * 0.95, 32]} />
-              <meshBasicMaterial
-                color="#c8d0d8"
-                transparent
-                opacity={0.28}
-                side={THREE.DoubleSide}
-                depthWrite={false}
-              />
-            </mesh>
-          </group>
 
           {cockpitView ? (
             <CockpitInterior
@@ -334,190 +228,179 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
             />
           ) : (
             <>
-              <mesh position={[0, 0.22, -0.15]}>
-                <capsuleGeometry args={[0.22, 0.7, 4, 10]} />
-                <meshStandardMaterial color={colors.interior} roughness={0.9} />
-              </mesh>
               <mesh
-                position={[0, isCessna ? 0.48 : 0.42, isCessna ? -0.15 : -0.05]}
-                rotation={[0.06, 0, 0]}
-                scale={[1, 0.72, isCessna ? 1.15 : 1.05]}
+                position={[0, isJet ? 0.38 : 0.42, isJet ? -0.35 : 0.15]}
+                rotation={[0.08, 0, 0]}
+                scale={[1, 0.62, isJet ? 1.05 : 0.95]}
               >
                 <sphereGeometry
-                  args={[0.5, 22, 16, 0, Math.PI * 2, 0, Math.PI * 0.58]}
+                  args={[0.48, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.55]}
                 />
                 <meshStandardMaterial
                   color={colors.glass}
                   metalness={0.85}
                   roughness={0.06}
                   transparent
-                  opacity={0.48}
+                  opacity={0.46}
                   envMapIntensity={1.2}
                 />
               </mesh>
             </>
           )}
-          {/* Windshield frame + fuselage stripe sit inside the POV frustum */}
-          <mesh
-            position={[0, 0.46, -0.58]}
-            rotation={[0.55, 0, 0]}
-            visible={!cockpitView}
-          >
-            <torusGeometry args={[0.32, 0.018, 6, 18, Math.PI]} />
-            <meshStandardMaterial color={colors.trim} metalness={0.3} />
-          </mesh>
-          <mesh position={[0, 0.02, 0.15]} visible={!cockpitView}>
-            <boxGeometry args={[0.88, 0.07, 3.4]} />
-            <meshStandardMaterial
-              color={colors.stripe}
-              metalness={0.25}
-              roughness={0.45}
-            />
-          </mesh>
-          <mesh position={[0, 0.02, 0.15]} visible={!cockpitView}>
-            <boxGeometry args={[0.9, 0.035, 3.42]} />
-            <meshStandardMaterial
-              color={colors.accent}
-              metalness={0.3}
-              roughness={0.4}
-            />
-          </mesh>
 
-          {/* Main wing */}
-          <group position={[0, wingY, wingZ]}>
+          <group position={[0, isJet ? -0.05 : 0.05, isJet ? 0.15 : 0.25]}>
             <mesh geometry={wing} castShadow>
               <meshStandardMaterial
                 color={colors.wing}
-                metalness={0.18}
-                roughness={0.46}
+                metalness={0.28}
+                roughness={0.5}
               />
             </mesh>
-            {/* Leading-edge accent */}
-            <mesh position={[0, 0.07, 0.42]}>
-              <boxGeometry args={[isCessna ? 7.6 : 5.8, 0.02, 0.12]} />
-              <meshStandardMaterial color={colors.accent} metalness={0.35} />
-            </mesh>
-            {/* Wingtip lights */}
-            <mesh position={[isCessna ? 4.05 : 3.12, 0.08, 0.05]}>
+            <mesh position={[isJet ? 4.05 : 2.55, 0.08, 0.05]}>
               <sphereGeometry args={[0.06, 8, 8]} />
               <meshBasicMaterial color="#ff3030" />
             </mesh>
-            <mesh position={[isCessna ? -4.05 : -3.12, 0.08, 0.05]}>
+            <mesh position={[isJet ? -4.05 : -2.55, 0.08, 0.05]}>
               <sphereGeometry args={[0.06, 8, 8]} />
               <meshBasicMaterial color="#30ff60" />
             </mesh>
           </group>
 
-          {/* Cessna wing struts + jury struts */}
-          {isCessna && (
+          {isJet && (
             <>
-              <mesh position={[1.55, 0.38, 0.1]} rotation={[0.05, 0, -0.42]}>
-                <cylinderGeometry args={[0.03, 0.035, 1.15, 6]} />
+              <mesh
+                position={[0.32, -0.18, -1.55]}
+                rotation={[Math.PI / 2, 0, 0]}
+                visible={!cockpitView}
+              >
+                <cylinderGeometry args={[0.16, 0.2, 1.4, 10]} />
                 <meshStandardMaterial
-                  color="#c5ccd3"
-                  metalness={0.55}
-                  roughness={0.3}
+                  color={colors.trim}
+                  metalness={0.45}
+                  roughness={0.4}
                 />
               </mesh>
-              <mesh position={[-1.55, 0.38, 0.1]} rotation={[0.05, 0, 0.42]}>
-                <cylinderGeometry args={[0.03, 0.035, 1.15, 6]} />
+              <mesh
+                position={[-0.32, -0.18, -1.55]}
+                rotation={[Math.PI / 2, 0, 0]}
+                visible={!cockpitView}
+              >
+                <cylinderGeometry args={[0.16, 0.2, 1.4, 10]} />
                 <meshStandardMaterial
-                  color="#c5ccd3"
-                  metalness={0.55}
-                  roughness={0.3}
+                  color={colors.trim}
+                  metalness={0.45}
+                  roughness={0.4}
                 />
+              </mesh>
+              <mesh position={[0.32, -0.18, 2.85]} visible={!cockpitView}>
+                <cylinderGeometry args={[0.14, 0.16, 0.45, 10]} />
+                <meshStandardMaterial color="#111" metalness={0.7} />
+              </mesh>
+              <mesh position={[-0.32, -0.18, 2.85]} visible={!cockpitView}>
+                <cylinderGeometry args={[0.14, 0.16, 0.45, 10]} />
+                <meshStandardMaterial color="#111" metalness={0.7} />
+              </mesh>
+              <mesh position={[1.6, -0.22, 0.2]} visible={!cockpitView}>
+                <boxGeometry args={[0.12, 0.12, 1.4]} />
+                <meshStandardMaterial color="#2a2a2a" metalness={0.5} />
+              </mesh>
+              <mesh position={[-1.6, -0.22, 0.2]} visible={!cockpitView}>
+                <boxGeometry args={[0.12, 0.12, 1.4]} />
+                <meshStandardMaterial color="#2a2a2a" metalness={0.5} />
               </mesh>
             </>
           )}
 
-          {/* Horizontal stabilizer */}
-          <group position={[0, isCessna ? 0.28 : 0.22, 2.42]}>
+          <group position={[0, isJet ? 0.18 : 0.22, isJet ? 2.85 : 2.15]}>
             <mesh geometry={stab} castShadow>
               <meshStandardMaterial
                 color={colors.wing}
-                metalness={0.18}
-                roughness={0.46}
+                metalness={0.28}
+                roughness={0.5}
               />
             </mesh>
           </group>
-
-          {/* Vertical fin + rudder stripe */}
-          <group position={[0, 0.22, 2.38]}>
+          <group position={[0, isJet ? 0.18 : 0.28, isJet ? 2.75 : 2.05]}>
             <mesh geometry={fin} castShadow>
               <meshStandardMaterial
                 color={colors.accent}
-                metalness={0.28}
-                roughness={0.4}
+                metalness={0.3}
+                roughness={0.42}
               />
-            </mesh>
-            <mesh position={[0, 0.7, 0.28]}>
-              <boxGeometry args={[0.04, 0.7, 0.12]} />
-              <meshStandardMaterial color={colors.stripe} metalness={0.3} />
             </mesh>
           </group>
 
-          {/* Exhaust stacks */}
-          <mesh
-            position={[0.2, -0.12, -1.55]}
-            rotation={[1.2, 0, 0.15]}
-            visible={!cockpitView}
-          >
-            <cylinderGeometry args={[0.035, 0.04, 0.28, 8]} />
-            <meshStandardMaterial
-              color="#3a3a3a"
-              metalness={0.7}
-              roughness={0.35}
-            />
-          </mesh>
-          <mesh
-            position={[-0.2, -0.12, -1.55]}
-            rotation={[1.2, 0, -0.15]}
-            visible={!cockpitView}
-          >
-            <cylinderGeometry args={[0.035, 0.04, 0.28, 8]} />
-            <meshStandardMaterial
-              color="#3a3a3a"
-              metalness={0.7}
-              roughness={0.35}
-            />
+          {!isJet && (
+            <>
+              <mesh position={[0, 0.22, 2.35]} visible={!cockpitView}>
+                <cylinderGeometry args={[0.09, 0.16, 2.4, 8]} />
+                <meshStandardMaterial color={colors.body} metalness={0.3} />
+              </mesh>
+              <group ref={rotorRef} position={[0, 1.15, 0.15]}>
+                <mesh>
+                  <cylinderGeometry args={[0.08, 0.1, 0.28, 8]} />
+                  <meshStandardMaterial color="#222" metalness={0.6} />
+                </mesh>
+                {[0, 1, 2, 3].map((i) => (
+                  <mesh
+                    key={`blade-${i}`}
+                    rotation={[0, (i * Math.PI) / 2, 0]}
+                    position={[1.7, 0.08, 0]}
+                  >
+                    <boxGeometry args={[3.4, 0.04, 0.22]} />
+                    <meshStandardMaterial color="#1c1c1c" metalness={0.45} />
+                  </mesh>
+                ))}
+              </group>
+              <group ref={tailRotorRef} position={[0.18, 0.72, 3.35]}>
+                <mesh rotation={[0, 0, Math.PI / 2]}>
+                  <boxGeometry args={[1.15, 0.03, 0.12]} />
+                  <meshStandardMaterial color="#222" />
+                </mesh>
+              </group>
+              <mesh position={[0, -0.55, 0.4]} visible={!cockpitView}>
+                <boxGeometry args={[1.6, 0.06, 0.08]} />
+                <meshStandardMaterial color="#555" metalness={0.5} />
+              </mesh>
+              <mesh position={[0.8, -0.75, 0.2]} visible={!cockpitView}>
+                <boxGeometry args={[0.06, 0.45, 1.6]} />
+                <meshStandardMaterial color="#444" />
+              </mesh>
+              <mesh position={[-0.8, -0.75, 0.2]} visible={!cockpitView}>
+                <boxGeometry args={[0.06, 0.45, 1.6]} />
+                <meshStandardMaterial color="#444" />
+              </mesh>
+            </>
+          )}
+
+          <mesh position={[0, 0.02, 0.1]} visible={!cockpitView}>
+            <boxGeometry args={[0.08, 0.06, isJet ? 4.6 : 2.8]} />
+            <meshStandardMaterial color={colors.stripe} metalness={0.35} />
           </mesh>
 
-          {/* Antenna */}
-          <mesh position={[0, 0.72, 0.85]} visible={!cockpitView}>
-            <cylinderGeometry args={[0.012, 0.012, 0.45, 5]} />
-            <meshStandardMaterial color="#222" />
-          </mesh>
-
-          {/* Landing light */}
-          <mesh position={[0.18, -0.05, -1.95]} visible={!cockpitView}>
-            <sphereGeometry args={[0.045, 8, 8]} />
+          <mesh
+            position={[0.16, -0.08, isJet ? -2.55 : -1.55]}
+            visible={!cockpitView}
+          >
+            <sphereGeometry args={[0.05, 8, 8]} />
             <meshBasicMaterial color="#fff6d0" />
           </mesh>
           <pointLight
             ref={lightRef}
-            position={[0, 0.1, -2.2]}
+            position={[0, 0.1, isJet ? -2.8 : -1.8]}
             color="#fff4d8"
             intensity={0.4}
             distance={18}
             visible={!cockpitView}
           />
 
-          {/* Landing gear */}
-          <group ref={gearRef} visible={!cockpitView}>
-            <LandingGear
-              x={isCessna ? 1.15 : 0.95}
-              z={0.15}
-              strutH={isCessna ? 0.92 : 0.88}
-              colors={colors}
-            />
-            <LandingGear
-              x={isCessna ? -1.15 : -0.95}
-              z={0.15}
-              strutH={isCessna ? 0.92 : 0.88}
-              colors={colors}
-            />
-            <LandingGear x={0} z={-1.55} strutH={0.72} colors={colors} nose />
-          </group>
+          {isJet && (
+            <group ref={gearRef} visible={!cockpitView}>
+              <LandingGear x={1.05} z={0.25} strutH={0.88} />
+              <LandingGear x={-1.05} z={0.25} strutH={0.88} />
+              <LandingGear x={0} z={-1.85} strutH={0.7} nose />
+            </group>
+          )}
         </group>
       </group>
     );
@@ -528,46 +411,29 @@ function LandingGear({
   x,
   z,
   strutH,
-  colors,
   nose = false,
 }: {
   x: number;
   z: number;
   strutH: number;
-  colors: Palette;
   nose?: boolean;
 }) {
-  const wheelR = nose ? 0.13 : 0.175;
+  const wheelR = nose ? 0.12 : 0.16;
   const contact = 1.05;
   const wheelY = -contact + wheelR;
-  const strutLen = strutH;
   return (
     <group position={[x, 0, z]}>
-      <mesh position={[0, wheelY + wheelR + strutLen / 2, 0]}>
-        <cylinderGeometry args={[0.028, 0.04, strutLen, 8]} />
+      <mesh position={[0, wheelY + wheelR + strutH / 2, 0]}>
+        <cylinderGeometry args={[0.028, 0.04, strutH, 8]} />
         <meshStandardMaterial
           color="#b8c0c8"
           metalness={0.65}
           roughness={0.28}
         />
       </mesh>
-      {!nose && (
-        <mesh position={[x > 0 ? 0.06 : -0.06, wheelY + wheelR + 0.08, 0]}>
-          <boxGeometry args={[0.12, 0.08, 0.16]} />
-          <meshStandardMaterial color={colors.trim} roughness={0.6} />
-        </mesh>
-      )}
       <mesh position={[0, wheelY, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[wheelR, wheelR, 0.11, 16]} />
         <meshStandardMaterial color="#1a1a1a" roughness={0.92} />
-      </mesh>
-      <mesh position={[0, wheelY, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[wheelR * 0.45, wheelR * 0.45, 0.13, 10]} />
-        <meshStandardMaterial
-          color="#6a7078"
-          metalness={0.55}
-          roughness={0.4}
-        />
       </mesh>
     </group>
   );

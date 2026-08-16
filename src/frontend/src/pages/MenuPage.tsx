@@ -10,27 +10,27 @@ import { motion } from "motion/react";
 
 const NAV_ITEMS = [
   {
-    title: "Flight Logs",
+    title: "After-Action Logs",
     description:
-      "Review your logbook of past flights — scores, weather, plane choice, and landing quality for every sortie.",
+      "Review past sorties — tempo, accuracy, extract quality, weather, and airframe for every mission.",
     icon: ClipboardList,
     to: "/flight-logs" as const,
     marker: "menu.flight_logs",
     accent: "primary" as const,
   },
   {
-    title: "Flight Plans",
+    title: "Missions",
     description:
-      "Choose your mission. Pick a flight plan, then select a plane and weather condition before taking to the sky.",
+      "Pick a theater. Drop in with a strike jet or attack helicopter, clear sectors, then extract.",
     icon: Plane,
     to: "/flight-plans" as const,
     marker: "menu.flight_plans",
     accent: "accent" as const,
   },
   {
-    title: "Flight School",
+    title: "Briefing Room",
     description:
-      "Learn the controls, scoring rules, and how to nail a smooth landing. Required reading before your first flight.",
+      "Learn air, hover, and on-foot controls, how sectors and multipliers work, and how extract scoring is calculated.",
     icon: GraduationCap,
     to: "/flight-school" as const,
     marker: "menu.flight_school",
@@ -39,7 +39,7 @@ const NAV_ITEMS = [
   {
     title: "Leaderboard",
     description:
-      "See the top clean landings. Sign in with Internet Identity after a flight to post your score.",
+      "See the top extracts. Sign in with Internet Identity after a sortie to post your score.",
     icon: Trophy,
     to: "/leaderboard" as const,
     marker: "menu.leaderboard",
@@ -81,7 +81,7 @@ export function MenuPage() {
 
         {/* Eyebrow */}
         <p className="hud-label mt-6 text-[11px] text-primary/80">
-          Cockpit&nbsp;Online&nbsp;·&nbsp;Clear&nbsp;for&nbsp;Takeoff
+          Theater&nbsp;Online&nbsp;·&nbsp;Cleared&nbsp;Hot
         </p>
 
         {/* Title */}
@@ -91,8 +91,9 @@ export function MenuPage() {
 
         {/* Subtitle */}
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          A pocket flight simulator. Pick a flight plan, choose your plane and
-          weather, and prove you can put it down softly on the runway.
+          Hybrid air-to-ground shooter. Fly a jet or helicopter over a bounded
+          theater, land or switch to a hovercraft, clear outposts, then extract
+          — or push the next sector for a multiplier.
         </p>
 
         {/* HUD status strip */}
@@ -103,12 +104,12 @@ export function MenuPage() {
           <span className="flex items-center gap-2">
             <Radar className="h-4 w-4 text-primary" aria-hidden="true" />
             <span className="hud-label text-[10px] text-muted-foreground">
-              4&nbsp;Sectors
+              6&nbsp;Theaters
             </span>
           </span>
           <span aria-hidden="true" className="h-3 w-px bg-border" />
           <span className="hud-label text-[10px] text-muted-foreground">
-            2&nbsp;Airframes
+            Jet&nbsp;+&nbsp;Heli
           </span>
           <span aria-hidden="true" className="h-3 w-px bg-border" />
           <span className="hud-label text-[10px] text-muted-foreground">
@@ -146,7 +147,7 @@ export function MenuPage() {
         transition={{ duration: 0.4, delay: 0.5 }}
         className="hud-label mx-auto mt-12 text-center text-[10px] text-muted-foreground"
       >
-        Select a sector to begin&nbsp;·&nbsp;Use the header to return to this
+        Select a mission to drop in&nbsp;·&nbsp;Use the header to return to this
         menu at any time
       </motion.p>
     </section>

@@ -33,8 +33,8 @@ module {
     description : Text;
   };
 
-  /// A complete flight plan: departure runway, guided destination waypoint,
-  /// and landing runway, plus the plane and weather it is flown under.
+  /// A complete mission: FOB drop-in, primary sector, and extract LZ,
+  /// plus the airframe and weather it is flown under.
   public type FlightPlan = {
     id : PlanId;
     name : Text;

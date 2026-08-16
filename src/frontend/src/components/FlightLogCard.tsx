@@ -1,6 +1,7 @@
-import type { FlightLogView, Plane, Weather } from "@/backend";
+import type { FlightLogView, Weather } from "@/backend";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { BACKEND_PLANE_LABEL, BACKEND_PLANE_ROLE } from "@/lib/aircraft";
 import {
   Calendar,
   ChevronRight,
@@ -16,11 +17,6 @@ interface FlightLogCardProps {
   index: number;
   onSelect: (logId: bigint) => void;
 }
-
-const planeLabel: Record<Plane, string> = {
-  cessna: "Cessna Skyhawk",
-  gulfstream: "Gulfstream G650",
-};
 
 const weatherVariant: Record<Weather, { label: string; className: string }> = {
   daytime: {
@@ -130,7 +126,7 @@ export function FlightLogCard({ log, index, onSelect }: FlightLogCardProps) {
                 aria-hidden="true"
               />
               <span className="truncate">
-                {planeLabel[log.plane] ?? log.plane}
+                {BACKEND_PLANE_LABEL[log.plane] ?? log.plane}
               </span>
             </span>
           </div>
@@ -151,7 +147,7 @@ export function FlightLogCard({ log, index, onSelect }: FlightLogCardProps) {
                 data-ocid={`flight-logs.plane.${index}`}
               >
                 <PlaneIcon className="size-3" aria-hidden="true" />
-                {log.plane === "gulfstream" ? "Jet" : "Trainer"}
+                {BACKEND_PLANE_ROLE[log.plane] ?? "Airframe"}
               </Badge>
             </div>
 

@@ -31,14 +31,14 @@ interface ControlBinding {
   /** lucide icon hinting at the action. */
   icon: LucideIcon;
   /** Group label used to bucket rows. */
-  group: "Pitch" | "Roll" | "Throttle" | "Brakes" | "View";
+  group: "Pitch" | "Roll" | "Throttle" | "Combat" | "Brakes" | "View";
 }
 
 const BINDINGS: ControlBinding[] = [
   {
     input: "W",
     alt: "↑",
-    action: "Pitch up — lift the nose skyward",
+    action: "Pitch up / walk forward — jet nose up, on-foot advance",
     icon: ArrowUp,
     group: "Pitch",
   },
@@ -65,7 +65,7 @@ const BINDINGS: ControlBinding[] = [
   },
   {
     input: "Shift",
-    action: "Throttle up — increase engine power",
+    action: "Throttle / collective up — jet thrust or heli lift",
     icon: Gauge,
     group: "Throttle",
   },
@@ -76,8 +76,22 @@ const BINDINGS: ControlBinding[] = [
     group: "Throttle",
   },
   {
+    input: "F",
+    alt: "LMB",
+    action: "Fire — cannon / rifle at the aimed outpost",
+    icon: MousePointer2,
+    group: "Combat",
+  },
+  {
+    input: "E",
+    action:
+      "Board / dismount — hovercraft at the FOB pad, on foot from the heli",
+    icon: Hand,
+    group: "Combat",
+  },
+  {
     input: "Space",
-    action: "Brakes — slow down on the runway",
+    action: "Brakes — slow down, or hold in the LZ to extract",
     icon: Hand,
     group: "Brakes",
   },
@@ -99,6 +113,7 @@ const GROUP_ORDER: ControlBinding["group"][] = [
   "Pitch",
   "Roll",
   "Throttle",
+  "Combat",
   "Brakes",
   "View",
 ];

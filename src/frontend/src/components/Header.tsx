@@ -40,7 +40,7 @@ export function Header({ compact = false }: { compact?: boolean }) {
               Sky Pilot
             </span>
             <span className="hud-label hidden text-[10px] text-muted-foreground sm:inline">
-              Flight Simulator
+              Open Shooter
             </span>
           </span>
         </Link>

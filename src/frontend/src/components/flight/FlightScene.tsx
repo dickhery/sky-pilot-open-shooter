@@ -1,3 +1,4 @@
+import { CombatField, ExtractMarker } from "@/components/flight/CombatField";
 import { Environment } from "@/components/flight/Environment";
 import { PlaneModel } from "@/components/flight/PlaneModel";
 import {
@@ -10,7 +11,11 @@ import {
   WaterBody,
 } from "@/components/flight/Scenery";
 import {
-  type Checkpoint,
+  HovercraftModel,
+  ParkedMarker,
+  SoldierModel,
+} from "@/components/flight/VehicleModels";
+import {
   type FlightState,
   type SceneLayout,
   stepFlight,
@@ -30,6 +35,8 @@ export interface FlightSceneProps {
     roll: number;
     throttle: number;
     brakes: boolean;
+    fire: boolean;
+    interact: boolean;
   }>;
   /** Shared mutable flight state — the page reads this for scoring/HUD. */
   flightState: React.MutableRefObject<FlightState>;
@@ -68,7 +75,7 @@ export function FlightScene({
       camera={{
         fov: cockpitView ? 68 : 58,
         near: cockpitView ? 0.1 : 0.2,
-        far: 5000,
+        far: 6500,
         position: [0, 6, 50],
       }}
     >
@@ -91,14 +98,8 @@ export function FlightScene({
         weather={weather}
         isLanding
       />
-      <CheckpointCourse layout={layout} flightState={flightState} />
-      <LandingRunwayMarker
-        position={layout.landingThreshold}
-        visibleWhen={() =>
-          flightState.current.nextCheckpoint >= layout.checkpoints.length &&
-          !flightState.current.finished
-        }
-      />
+      <CombatField layout={layout} flightState={flightState} />
+      <ExtractMarker layout={layout} flightState={flightState} />
       <FlightRig
         plane={plane}
         layout={layout}
@@ -320,132 +321,7 @@ function ApproachLight({
   );
 }
 
-function CheckpointCourse({
-  layout,
-  flightState,
-}: {
-  layout: SceneLayout;
-  flightState: React.MutableRefObject<FlightState>;
-}) {
-  return (
-    <group>
-      {layout.checkpoints.map((cp, i) => {
-        const prev =
-          i === 0 ? layout.departureStart : layout.checkpoints[i - 1].position;
-        return (
-          <CheckpointRing
-            key={cp.id}
-            checkpoint={cp}
-            inboundFrom={prev}
-            index={i}
-            flightState={flightState}
-          />
-        );
-      })}
-    </group>
-  );
-}
-
-function CheckpointRing({
-  checkpoint,
-  inboundFrom,
-  index,
-  flightState,
-}: {
-  checkpoint: Checkpoint;
-  inboundFrom: THREE.Vector3;
-  index: number;
-  flightState: React.MutableRefObject<FlightState>;
-}) {
-  const ref = useRef<THREE.Group>(null);
-  const matRef = useRef<THREE.MeshBasicMaterial>(null);
-  const heading = Math.atan2(
-    checkpoint.position.x - inboundFrom.x,
-    checkpoint.position.z - inboundFrom.z,
-  );
-
-  useFrame((clockState) => {
-    if (!ref.current) return;
-    const next = flightState.current.nextCheckpoint;
-    const collected = next > index;
-    const active = next === index && !flightState.current.finished;
-    ref.current.visible = !collected;
-    if (!active) {
-      ref.current.scale.setScalar(0.95);
-      if (matRef.current) matRef.current.opacity = 0.5;
-      return;
-    }
-    const pulse = 1 + Math.sin(clockState.clock.elapsedTime * 2.6) * 0.1;
-    ref.current.scale.setScalar(pulse);
-    if (matRef.current) {
-      matRef.current.opacity = 1;
-    }
-  });
-
-  return (
-    <group ref={ref} position={checkpoint.position} rotation={[0, heading, 0]}>
-      <mesh position={[0, -checkpoint.position.y / 2, 0]}>
-        <cylinderGeometry args={[0.22, 0.35, checkpoint.position.y, 8]} />
-        <meshBasicMaterial color="#5ef2ff" transparent opacity={0.38} />
-      </mesh>
-      <mesh>
-        <torusGeometry args={[12, 0.7, 12, 40]} />
-        <meshBasicMaterial
-          ref={matRef}
-          color="#5ef2ff"
-          transparent
-          opacity={0.95}
-        />
-      </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[9.5, 14, 40]} />
-        <meshBasicMaterial
-          color="#b8fbff"
-          transparent
-          opacity={0.35}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[1.4, 16, 16]} />
-        <meshBasicMaterial color="#fff6b0" />
-      </mesh>
-    </group>
-  );
-}
-
-function LandingRunwayMarker({
-  position,
-  visibleWhen,
-}: {
-  position: THREE.Vector3;
-  visibleWhen: () => boolean;
-}) {
-  const ref = useRef<THREE.Group>(null);
-  useFrame((state) => {
-    if (!ref.current) return;
-    ref.current.visible = visibleWhen();
-    const pulse = 1 + Math.sin(state.clock.elapsedTime * 2.4) * 0.12;
-    ref.current.scale.setScalar(pulse);
-  });
-  return (
-    <group ref={ref} position={[position.x, position.y + 10, position.z]}>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[9, 11, 40]} />
-        <meshBasicMaterial
-          color="#3dff7a"
-          transparent
-          opacity={0.55}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-// ── Flight rig: plane + camera + physics loop ───────────────────────────────
+// ── Flight rig: vehicle + camera + physics loop ─────────────────────────────
 
 const _camOffset = new THREE.Vector3();
 const _camTarget = new THREE.Vector3();
@@ -504,12 +380,13 @@ function FlightRig({
     const heading = state.rotation.y;
     const bankLean = state.rotation.z * 0.35;
 
-    if (cockpitView) {
+    const onFoot = state.vehicleMode === "onFoot";
+    const hover = state.vehicleMode === "hovercraft";
+    if (cockpitView && state.vehicleMode === "air") {
       persp.fov = 68;
       persp.near = 0.1;
-      persp.far = 5000;
+      persp.far = 6500;
       persp.updateProjectionMatrix();
-      // Right-hand seat, above the dash, looking out the windshield cutout.
       _camOffset.set(0.16, 0.42, 0.22);
       _camOffset.applyEuler(state.rotation);
       camera.position.copy(state.position).add(_camOffset);
@@ -518,12 +395,12 @@ function FlightRig({
       _up.set(0, 1, 0).applyEuler(state.rotation);
       camera.up.copy(_up);
     } else {
-      persp.fov = 58;
-      persp.near = 0.2;
-      persp.far = 5000;
+      persp.fov = onFoot ? 72 : 58;
+      persp.near = 0.15;
+      persp.far = 6500;
       persp.updateProjectionMatrix();
-      const dist = state.airborne ? 12.5 : 9;
-      const height = state.airborne ? 3.6 : 2.6;
+      const dist = onFoot ? 4.2 : hover ? 8.5 : state.airborne ? 14 : 10;
+      const height = onFoot ? 2.1 : hover ? 3.2 : state.airborne ? 4.2 : 2.8;
       _camOffset.set(
         Math.sin(heading) * dist + Math.cos(heading) * bankLean * 2.2,
         height + Math.abs(state.rotation.x) * 1.4,
@@ -540,7 +417,7 @@ function FlightRig({
       camera.position.copy(camPos.current);
       _lookAt.set(
         state.position.x - Math.sin(heading) * 10,
-        state.position.y + 0.55 + state.rotation.x * 2.5,
+        state.position.y + (onFoot ? 1.3 : 0.55) + state.rotation.x * 2.5,
         state.position.z - Math.cos(heading) * 10,
       );
       camera.lookAt(_lookAt);
@@ -552,13 +429,18 @@ function FlightRig({
   return (
     <>
       <group ref={planeRef}>
-        <PlaneModel
-          planeId={plane.id}
+        <ActiveVehicle
+          plane={plane}
           axes={controlsAxes}
           flightState={flightState}
           cockpitView={cockpitView}
         />
       </group>
+      <ParkedVehicles
+        plane={plane}
+        flightState={flightState}
+        axes={controlsAxes}
+      />
       <mesh ref={shadowRef} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[1, 20]} />
         <meshBasicMaterial
@@ -568,6 +450,102 @@ function FlightRig({
           depthWrite={false}
         />
       </mesh>
+    </>
+  );
+}
+
+function ActiveVehicle({
+  plane,
+  axes,
+  flightState,
+  cockpitView,
+}: {
+  plane: PlaneType;
+  axes: FlightSceneProps["controlsAxes"];
+  flightState: React.MutableRefObject<FlightState>;
+  cockpitView: boolean;
+}) {
+  const air = useRef<THREE.Group>(null);
+  const hover = useRef<THREE.Group>(null);
+  const foot = useRef<THREE.Group>(null);
+  useFrame(() => {
+    const mode = flightState.current.vehicleMode;
+    if (air.current) air.current.visible = mode === "air";
+    if (hover.current) hover.current.visible = mode === "hovercraft";
+    if (foot.current) foot.current.visible = mode === "onFoot";
+  });
+  return (
+    <>
+      <group ref={air}>
+        <PlaneModel
+          planeId={plane.id}
+          axes={axes}
+          flightState={flightState}
+          cockpitView={cockpitView}
+        />
+      </group>
+      <group ref={hover} visible={false}>
+        <HovercraftModel axes={axes} />
+      </group>
+      <group ref={foot} visible={false}>
+        <SoldierModel />
+      </group>
+    </>
+  );
+}
+
+function ParkedVehicles({
+  plane,
+  flightState,
+  axes,
+}: {
+  plane: PlaneType;
+  flightState: React.MutableRefObject<FlightState>;
+  axes: FlightSceneProps["controlsAxes"];
+}) {
+  const airRef = useRef<THREE.Group>(null);
+  const hoverRef = useRef<THREE.Group>(null);
+  useFrame(() => {
+    const s = flightState.current;
+    if (airRef.current) {
+      if (s.airParked) {
+        airRef.current.visible = true;
+        airRef.current.position.copy(s.airParked);
+        airRef.current.rotation.set(0, s.airHeading, 0);
+      } else {
+        airRef.current.visible = false;
+      }
+    }
+    if (hoverRef.current) {
+      if (s.hoverParked) {
+        hoverRef.current.visible = true;
+        hoverRef.current.position.copy(s.hoverParked);
+        hoverRef.current.rotation.set(0, s.hoverHeading, 0);
+      } else {
+        hoverRef.current.visible = false;
+      }
+    }
+  });
+  return (
+    <>
+      <group ref={airRef} visible={false}>
+        <PlaneModel
+          planeId={plane.id}
+          axes={axes}
+          flightState={flightState}
+          cockpitView={false}
+        />
+        {flightState.current.airParked && (
+          <ParkedMarker
+            position={new THREE.Vector3()}
+            heading={0}
+            kind={plane.class === "jet" ? "air-jet" : "air-heli"}
+          />
+        )}
+      </group>
+      <group ref={hoverRef} visible={false}>
+        <HovercraftModel axes={axes} />
+      </group>
     </>
   );
 }

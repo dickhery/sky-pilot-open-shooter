@@ -45,7 +45,7 @@ module {
       Runtime.trap("score must be 0-100");
     };
     if (not isKnownPlan(planName)) {
-      Runtime.trap("unknown flight plan");
+      Runtime.trap("unknown mission");
     };
     let name = sanitizeName(displayName);
 
