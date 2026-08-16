@@ -59,8 +59,8 @@ export function MissionBriefing({
           </div>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-foreground">
             <li>
-              Fly to the amber-ringed outpost and destroy every target (F /
-              click).
+              Fly to the orange-marked outpost. Air rounds drop and explode on
+              dirt — you do not need a direct hit.
             </li>
             <li>
               Clear one sector, then extract at{" "}

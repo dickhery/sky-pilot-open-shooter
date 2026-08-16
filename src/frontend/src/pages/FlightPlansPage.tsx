@@ -13,7 +13,7 @@ import { motion } from "motion/react";
  * Fetches available flight plans via `useFlightPlans`, renders them as
  * a responsive grid of selectable cards, and on selection arms the plan
  * in the game store and navigates to `/flight-simulation` to begin the
- * flight. Shows loading and error states per the Cockpit Noir theme.
+ * flight. Shows loading and error states per the Field Olive theme.
  */
 export function FlightPlansPage() {
   const navigate = useNavigate();

@@ -78,6 +78,16 @@ export interface Projectile {
   owner: "player" | "enemy";
   life: number;
   damage: number;
+  gravity: boolean;
+  blastRadius: number;
+}
+
+export interface Blast {
+  id: number;
+  position: THREE.Vector3;
+  age: number;
+  life: number;
+  radius: number;
 }
 
 export interface ControlInput {
@@ -122,6 +132,7 @@ export interface FlightState {
   hoverHeading: number;
   targets: CombatTarget[];
   projectiles: Projectile[];
+  blasts: Blast[];
   playerHealth: number;
   shotsFired: number;
   shotsHit: number;
@@ -173,6 +184,7 @@ export function createInitialFlightState(layout: SceneLayout): FlightState {
     hoverHeading: layout.departureHeading,
     targets,
     projectiles: [],
+    blasts: [],
     playerHealth: PLAYER_MAX_HP,
     shotsFired: 0,
     shotsHit: 0,
@@ -465,12 +477,14 @@ function muzzleOrigin(state: FlightState): THREE.Vector3 {
 function firePlayer(state: FlightState, plane: Plane): void {
   if (state.fireCooldown > 0 || state.finished) return;
   const heading = state.rotation.y;
-  const pitch = state.vehicleMode === "air" ? state.rotation.x : 0;
-  const speed =
-    state.vehicleMode === "air" ? (plane.class === "jet" ? 420 : 280) : 220;
+  const fromAir = state.vehicleMode === "air";
+  const pitch = fromAir ? state.rotation.x : 0;
+  const speed = fromAir ? (plane.class === "jet" ? 260 : 210) : 220;
+  // Air shots bias downward so a level strafing run still hits dirt.
+  const downBias = fromAir ? 0.32 : 0;
   const dir = new THREE.Vector3(
     -Math.sin(heading) * Math.cos(pitch),
-    Math.sin(pitch),
+    Math.sin(pitch) - downBias,
     -Math.cos(heading) * Math.cos(pitch),
   ).normalize();
   state.projectiles.push({
@@ -478,33 +492,72 @@ function firePlayer(state: FlightState, plane: Plane): void {
     position: muzzleOrigin(state),
     velocity: dir.multiplyScalar(speed),
     owner: "player",
-    life: 1.8,
-    damage:
-      state.vehicleMode === "air" ? (plane.class === "jet" ? 18 : 14) : 11,
+    life: fromAir ? 2.8 : 1.6,
+    damage: fromAir ? (plane.class === "jet" ? 26 : 20) : 12,
+    gravity: fromAir,
+    blastRadius: fromAir ? (plane.class === "jet" ? 28 : 20) : 6,
   });
   state.shotsFired += 1;
-  state.fireCooldown =
-    state.vehicleMode === "air" ? (plane.class === "jet" ? 0.09 : 0.13) : 0.2;
+  state.fireCooldown = fromAir ? (plane.class === "jet" ? 0.16 : 0.18) : 0.2;
+}
+
+function detonate(
+  state: FlightState,
+  at: THREE.Vector3,
+  shot: Projectile,
+): void {
+  const blast: Blast = {
+    id: nextShotId++,
+    position: new THREE.Vector3(at.x, Math.max(0.15, at.y), at.z),
+    age: 0,
+    life: 0.55,
+    radius: Math.max(6, shot.blastRadius),
+  };
+  state.blasts.push(blast);
+  if (state.blasts.length > 14) {
+    state.blasts.splice(0, state.blasts.length - 14);
+  }
+  const radius = shot.blastRadius;
+  let scored = false;
+  for (const target of state.targets) {
+    if (target.destroyed) continue;
+    const dx = target.position.x - at.x;
+    const dz = target.position.z - at.z;
+    const dy = target.position.y - at.y;
+    if (Math.hypot(dx, dy, dz) > radius) continue;
+    target.hp -= shot.damage;
+    scored = true;
+    if (target.hp <= 0) {
+      target.hp = 0;
+      target.destroyed = true;
+    }
+  }
+  if (scored) {
+    state.shotsHit += 1;
+  }
 }
 
 function stepProjectiles(state: FlightState, dt: number): void {
   const keep: Projectile[] = [];
   for (const shot of state.projectiles) {
     shot.life -= dt;
+    if (shot.gravity) {
+      shot.velocity.y -= 42 * dt;
+    }
     shot.position.addScaledVector(shot.velocity, dt);
-    if (shot.life <= 0 || shot.position.y < -2) continue;
+    if (shot.life <= 0) continue;
 
     if (shot.owner === "player") {
+      if (shot.position.y <= 0.12) {
+        shot.position.y = 0.12;
+        detonate(state, shot.position, shot);
+        continue;
+      }
       let hit = false;
       for (const target of state.targets) {
         if (target.destroyed) continue;
-        if (shot.position.distanceTo(target.position) < 4.6) {
-          target.hp -= shot.damage;
-          state.shotsHit += 1;
-          if (target.hp <= 0) {
-            target.hp = 0;
-            target.destroyed = true;
-          }
+        if (shot.position.distanceTo(target.position) < 7) {
+          detonate(state, target.position, shot);
           hit = true;
           break;
         }
@@ -513,6 +566,7 @@ function stepProjectiles(state: FlightState, dt: number): void {
       continue;
     }
 
+    if (shot.position.y < -2) continue;
     const hitRadius = state.vehicleMode === "onFoot" ? 1.6 : 3.4;
     if (shot.position.distanceTo(state.position) < hitRadius) {
       state.playerHealth = Math.max(0, state.playerHealth - shot.damage);
@@ -524,6 +578,13 @@ function stepProjectiles(state: FlightState, dt: number): void {
     keep.push(shot);
   }
   state.projectiles = keep;
+
+  const liveBlasts: Blast[] = [];
+  for (const blast of state.blasts) {
+    blast.age += dt;
+    if (blast.age < blast.life) liveBlasts.push(blast);
+  }
+  state.blasts = liveBlasts;
 }
 
 function stepTurrets(state: FlightState, dt: number): void {
@@ -543,6 +604,8 @@ function stepTurrets(state: FlightState, dt: number): void {
       owner: "enemy",
       life: 2.4,
       damage: 8,
+      gravity: false,
+      blastRadius: 0,
     });
     target.fireCooldown = 1.55 + Math.random() * 0.5;
   }

@@ -41,7 +41,7 @@ interface ResultsScreenProps {
 /**
  * Post-flight results screen.
  *
- * Cockpit Noir styled: dark card, cyan/amber instrument glows, monospace
+ * Field Olive styled: dark card, olive/brass instrument glows, monospace
  * telemetry. Shows the three score components (speed, landing smoothness,
  * runway alignment) plus the weighted total, then offers Retry / Return
  * to Menu. Overlays the 3D scene as a modal-style panel.

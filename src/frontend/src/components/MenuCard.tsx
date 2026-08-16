@@ -22,7 +22,7 @@ export interface MenuCardProps {
 }
 
 /**
- * Reusable navigation card for the Sky Pilot main menu hub.
+ * Reusable navigation card for the IRONFRONT main menu hub.
  *
  * Renders as a full-card link with an instrument-bezel icon, title,
  * description, and a runway-strobe hover indicator. Entrance is

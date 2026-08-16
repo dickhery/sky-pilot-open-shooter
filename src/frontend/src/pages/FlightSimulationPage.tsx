@@ -406,7 +406,7 @@ function getMissionBrief(
         ? {
             objective: `Destroy the outpost at ${waypointName}`,
             subObjective:
-              "Follow the nav arrow to the amber ring — fire with F",
+              "Orange beacons mark targets. F fires — rounds drop and blast the dirt",
           }
         : canDismount
           ? {

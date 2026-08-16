@@ -508,7 +508,7 @@ function controlRows(
       { key: "ct", input: "Ctrl", action: "Descend" },
       { key: "ws", input: "W / S", action: "Fly forward / back" },
       { key: "ad", input: "A / D", action: "Turn" },
-      { key: "f", input: "F", action: "Fire cannon" },
+      { key: "f", input: "F", action: "Fire — blasts on dirt" },
       { key: "e", input: "E", action: "Land, then dismount" },
       { key: "sp", input: "Space", action: "Settle / extract" },
     ];

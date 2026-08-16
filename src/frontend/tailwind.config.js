@@ -83,9 +83,9 @@ export default {
       boxShadow: {
         xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
         "instrument-glow":
-          "0 0 0 1px oklch(0.75 0.15 190 / 0.4), 0 0 22px oklch(0.75 0.15 190 / 0.22)",
+          "0 0 0 1px oklch(0.72 0.09 128 / 0.4), 0 0 22px oklch(0.72 0.09 128 / 0.2)",
         "caution-glow":
-          "0 0 0 1px oklch(0.72 0.17 70 / 0.4), 0 0 22px oklch(0.72 0.17 70 / 0.22)",
+          "0 0 0 1px oklch(0.74 0.15 72 / 0.4), 0 0 22px oklch(0.74 0.15 72 / 0.22)",
       },
       keyframes: {
         "accordion-down": {

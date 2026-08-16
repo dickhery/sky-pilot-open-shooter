@@ -1,32 +1,30 @@
-# Cockpit Noir — Design Brief
+# Field Olive — Design Brief
 
 ## Direction
-Cockpit Noir: a flight-sim aesthetic that treats the screen like an instrument
-panel at dusk. Dark mode is primary — deep midnight blue-black base, cyan
-horizon as the primary signal color, sunset amber as the caution/accent. The
-feeling is focused, technical, and cinematic, never gamified or cartoonish.
+Field Olive: a war-theater HUD. Dark mode is primary — olive-black base,
+drab green as the signal color, brass as the caution/accent. The feeling is
+field command, not civilian avionics.
 
 ## Tone
-Calm authority. Copy is terse and pilot-flavored ("Cleared for takeoff",
-"Maintain runway heading"). Numbers and HUD labels use JetBrains Mono in
-uppercase with wide tracking. Body copy stays plain and instructional.
+Terse and operational ("Cleared hot", "Destroy the outpost"). Numbers and HUD
+labels use JetBrains Mono in uppercase with wide tracking. Body copy stays
+plain and instructional.
 
 ## Differentiation
-Most flight UIs lean either photoreal or arcade-bright. Cockpit Noir sits
-between: a restrained instrument-panel chrome wrapped around a vivid horizon
-gradient. The cyan/amber pair reads as avionics, not generic SaaS.
+Most flight UIs lean cyan-cockpit or arcade-neon. Field Olive sits in olive
+drab and brass so the chrome matches the air-to-ground war theme.
 
 ## Color Palette
 
-| Token        | Light (daytime-flight)        | Dark (cockpit-noir)            | Use                  |
+| Token        | Light (daylight field)        | Dark (field night)             | Use                  |
 | ------------ | ---------------------------- | ------------------------------ | -------------------- |
-| background   | oklch(0.97 0.012 230)        | oklch(0.145 0.02 250)          | page base            |
-| card         | oklch(0.99 0.008 220)        | oklch(0.185 0.025 250)         | header / panels      |
-| muted        | oklch(0.94 0.014 220)        | oklch(0.21 0.022 250)          | alternating sections |
-| primary      | oklch(0.72 0.14 190) cyan     | oklch(0.75 0.15 190) cyan      | CTAs, active state   |
-| accent       | oklch(0.74 0.16 70) amber     | oklch(0.72 0.17 70) amber      | warnings, highlights |
-| foreground   | oklch(0.18 0.02 250)         | oklch(0.93 0.015 220)          | body text            |
-| border       | oklch(0.88 0.018 220)        | oklch(0.27 0.025 250)          | dividers, inputs     |
+| background   | oklch(0.93 0.02 118)         | oklch(0.13 0.028 128)          | page base            |
+| card         | oklch(0.96 0.016 115)        | oklch(0.17 0.03 125)           | header / panels      |
+| muted        | oklch(0.9 0.02 118)          | oklch(0.2 0.026 122)           | alternating sections |
+| primary      | oklch(0.42 0.08 128) olive    | oklch(0.72 0.09 128) olive     | CTAs, active state   |
+| accent       | oklch(0.68 0.14 72) brass     | oklch(0.74 0.15 72) brass      | warnings, highlights |
+| foreground   | oklch(0.18 0.025 125)        | oklch(0.9 0.02 110)            | body text            |
+| border       | oklch(0.82 0.03 118)         | oklch(0.26 0.03 122)           | dividers, inputs     |
 
 ## Typography
 - **Display** — Space Grotesk. Headings, hero numerals, menu titles.

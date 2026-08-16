@@ -7,9 +7,9 @@ interface LayoutProps {
 }
 
 /**
- * Shared layout wrapper for every Sky Pilot screen.
+ * Shared layout wrapper for every IRONFRONT screen.
  *
- * Applies the Cockpit Noir horizon backdrop, a sticky branded header,
+ * Applies the field-olive horizon backdrop, a sticky branded header,
  * and a centered content region. The flight screen drops chrome so the
  * canvas can fill a phone viewport.
  */
@@ -29,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,transparent_55%,oklch(0.145_0.02_250/0.85)_100%)]"
+        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,transparent_55%,oklch(0.13_0.028_128/0.88)_100%)]"
       />
 
       <Header compact={isFlight} />
@@ -48,7 +48,7 @@ export function Layout({ children }: LayoutProps) {
         <footer className="border-t border-border bg-card/60 py-4 sm:py-6">
           <div className="container flex flex-col items-center justify-between gap-2 text-center sm:flex-row sm:text-left">
             <p className="hud-label text-[10px] text-muted-foreground">
-              © {new Date().getFullYear()} Sky Pilot
+              © {new Date().getFullYear()} IRONFRONT
             </p>
             <a
               href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(

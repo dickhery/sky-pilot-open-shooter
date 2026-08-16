@@ -48,10 +48,7 @@ const NAV_ITEMS = [
 ];
 
 /**
- * Sky Pilot main menu hub — the app's default landing screen.
- *
- * Cockpit Noir treatment: horizon backdrop, HUD scanlines, instrument
- * glow, and three primary navigation cards.
+ * IRONFRONT main menu hub — the app's default landing screen.
  */
 export function MenuPage() {
   return (
@@ -86,14 +83,14 @@ export function MenuPage() {
 
         {/* Title */}
         <h1 className="mt-3 font-display text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
-          Sky&nbsp;Pilot
+          IRONFRONT
         </h1>
 
         {/* Subtitle */}
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          Hybrid air-to-ground shooter. Fly a jet or helicopter over a bounded
-          theater, land or switch to a hovercraft, clear outposts, then extract
-          — or push the next sector for a multiplier.
+          Air-to-ground war. Strafe orange-marked outposts — rounds drop and
+          explode on dirt — then extract, or push the next sector for a
+          multiplier.
         </p>
 
         {/* HUD status strip */}

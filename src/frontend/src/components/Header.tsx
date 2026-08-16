@@ -4,7 +4,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { LogIn, LogOut, Plane, Rocket } from "lucide-react";
 
 /**
- * Sky Pilot app header.
+ * IRONFRONT app header.
  *
  * Always shows the brand mark + name. On every route except the menu
  * (`/`), a "Back to Menu" control appears on the right so the pilot
@@ -27,7 +27,7 @@ export function Header({ compact = false }: { compact?: boolean }) {
           to="/"
           className="group flex items-center gap-3"
           data-ocid="header.brand.link"
-          aria-label="Sky Pilot — back to menu"
+          aria-label="IRONFRONT — back to menu"
         >
           <span className="glow-instrument flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-primary transition-smooth group-hover:bg-primary/25 sm:h-10 sm:w-10">
             <Plane
@@ -37,10 +37,10 @@ export function Header({ compact = false }: { compact?: boolean }) {
           </span>
           <span className="flex flex-col leading-none">
             <span className="font-display text-base font-semibold tracking-tight text-foreground sm:text-lg">
-              Sky Pilot
+              IRONFRONT
             </span>
             <span className="hud-label hidden text-[10px] text-muted-foreground sm:inline">
-              Open Shooter
+              Air-to-Ground
             </span>
           </span>
         </Link>

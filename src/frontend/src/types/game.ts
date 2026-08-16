@@ -1,4 +1,4 @@
-// Frontend domain types for Sky Pilot open shooter.
+// Frontend domain types for IRONFRONT.
 // Backend still stores plane as #cessna / #gulfstream (Candid-stable).
 // The frontend maps those to the strike jet and attack helicopter.
 

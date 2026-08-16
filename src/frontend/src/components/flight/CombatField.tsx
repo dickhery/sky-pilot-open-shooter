@@ -27,6 +27,7 @@ export function CombatField({
       ))}
       <TargetMeshes flightState={flightState} />
       <ProjectileMeshes flightState={flightState} />
+      <BlastMeshes flightState={flightState} />
       <mesh
         position={[layout.hoverPad.x, 0.04, layout.hoverPad.z]}
         rotation={[-Math.PI / 2, 0, 0]}
@@ -39,7 +40,7 @@ export function CombatField({
         rotation={[-Math.PI / 2, 0, 0]}
       >
         <ringGeometry args={[5.2, 5.8, 24]} />
-        <meshBasicMaterial color="#8fd4a0" transparent opacity={0.55} />
+        <meshBasicMaterial color="#c4a24a" transparent opacity={0.55} />
       </mesh>
     </group>
   );
@@ -74,24 +75,34 @@ function SectorMarker({
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[sector.radius * 0.72, sector.radius * 0.78, 48]} />
         <meshBasicMaterial
-          color="#ffb14a"
+          color="#ff7a18"
           transparent
-          opacity={0.35}
+          opacity={0.55}
           side={THREE.DoubleSide}
           depthWrite={false}
         />
       </mesh>
-      <mesh position={[0, 18, 0]}>
-        <cylinderGeometry args={[0.18, 0.28, 36, 8]} />
-        <meshBasicMaterial color="#ffb14a" transparent opacity={0.28} />
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
+        <ringGeometry args={[8, 11, 32]} />
+        <meshBasicMaterial
+          color="#ffd060"
+          transparent
+          opacity={0.28}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh position={[0, 22, 0]}>
+        <cylinderGeometry args={[0.28, 0.4, 44, 8]} />
+        <meshBasicMaterial color="#ff8a20" transparent opacity={0.42} />
       </mesh>
       <Html
-        position={[0, 28, 0]}
+        position={[0, 32, 0]}
         center
-        distanceFactor={80}
+        distanceFactor={90}
         style={{ pointerEvents: "none" }}
       >
-        <div className="rounded border border-amber-400/70 bg-black/70 px-2 py-0.5 font-mono text-[10px] tracking-wide text-amber-300 uppercase">
+        <div className="rounded border border-orange-400/80 bg-black/75 px-2 py-0.5 font-mono text-[10px] tracking-wide text-orange-300 uppercase">
           Destroy · {sector.name}
         </div>
       </Html>
@@ -125,15 +136,53 @@ function TargetMesh({
   flightState: React.MutableRefObject<FlightState>;
 }) {
   const ref = useRef<THREE.Group>(null);
-  useFrame(() => {
+  const beacon = useRef<THREE.Mesh>(null);
+  useFrame((clock) => {
     if (!ref.current) return;
     const target = flightState.current.targets.find((t) => t.id === targetId);
     ref.current.visible = Boolean(target && !target.destroyed);
+    if (beacon.current) {
+      const pulse = 0.55 + Math.sin(clock.clock.elapsedTime * 4.2) * 0.35;
+      const mat = beacon.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = pulse;
+    }
   });
   const target = flightState.current.targets.find((t) => t.id === targetId);
   if (!target) return null;
   return (
     <group ref={ref} position={target.position}>
+      {/* Ground paint — readable from altitude */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -target.position.y + 0.06, 0]}
+      >
+        <ringGeometry args={[3.2, 5.4, 24]} />
+        <meshBasicMaterial
+          color="#ff6a10"
+          transparent
+          opacity={0.7}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh
+        rotation={[-Math.PI / 2, 0, Math.PI / 4]}
+        position={[0, -target.position.y + 0.07, 0]}
+      >
+        <planeGeometry args={[7.2, 0.55]} />
+        <meshBasicMaterial color="#ffd040" transparent opacity={0.85} />
+      </mesh>
+      <mesh
+        rotation={[-Math.PI / 2, 0, -Math.PI / 4]}
+        position={[0, -target.position.y + 0.07, 0]}
+      >
+        <planeGeometry args={[7.2, 0.55]} />
+        <meshBasicMaterial color="#ffd040" transparent opacity={0.85} />
+      </mesh>
+      <mesh ref={beacon} position={[0, 9, 0]}>
+        <cylinderGeometry args={[0.18, 0.32, 18, 8]} />
+        <meshBasicMaterial color="#ff7a18" transparent opacity={0.65} />
+      </mesh>
       <HardTarget target={target} />
     </group>
   );
@@ -144,42 +193,64 @@ function HardTarget({ target }: { target: CombatTarget }) {
     case "turret":
       return (
         <group>
-          <mesh position={[0, 0.2, 0]}>
-            <cylinderGeometry args={[0.7, 0.9, 0.5, 8]} />
-            <meshStandardMaterial color="#4a4034" roughness={0.7} />
+          <mesh position={[0, 0.25, 0]}>
+            <cylinderGeometry args={[0.95, 1.15, 0.55, 8]} />
+            <meshStandardMaterial
+              color="#6a3a1c"
+              emissive="#5a2208"
+              emissiveIntensity={0.35}
+              roughness={0.65}
+            />
           </mesh>
-          <mesh position={[0, 0.7, 0]}>
-            <boxGeometry args={[0.7, 0.45, 0.7]} />
-            <meshStandardMaterial color="#3a342c" metalness={0.4} />
+          <mesh position={[0, 0.85, 0]}>
+            <boxGeometry args={[1.05, 0.55, 1.05]} />
+            <meshStandardMaterial
+              color="#c45a18"
+              metalness={0.35}
+              roughness={0.45}
+            />
           </mesh>
-          <mesh position={[0, 0.75, -0.7]} rotation={[0.1, 0, 0]}>
-            <cylinderGeometry args={[0.08, 0.1, 1.3, 8]} />
+          <mesh position={[0, 0.9, -0.85]} rotation={[0.1, 0, 0]}>
+            <cylinderGeometry args={[0.1, 0.12, 1.6, 8]} />
             <meshStandardMaterial color="#222" metalness={0.6} />
           </mesh>
         </group>
       );
     case "bunker":
       return (
-        <mesh>
-          <boxGeometry args={[4.2, 2.2, 3.2]} />
-          <meshStandardMaterial color="#5a5346" roughness={0.85} />
-        </mesh>
+        <group>
+          <mesh>
+            <boxGeometry args={[5.2, 2.6, 3.8]} />
+            <meshStandardMaterial
+              color="#8a4a22"
+              emissive="#3a1808"
+              emissiveIntensity={0.25}
+              roughness={0.8}
+            />
+          </mesh>
+          <mesh position={[0, 1.45, 0]}>
+            <boxGeometry args={[5.4, 0.18, 4]} />
+            <meshStandardMaterial color="#e07020" roughness={0.5} />
+          </mesh>
+        </group>
       );
     case "radar":
       return (
         <group>
-          <mesh position={[0, -0.6, 0]}>
-            <cylinderGeometry args={[0.18, 0.25, 2.2, 8]} />
+          <mesh position={[0, -0.4, 0]}>
+            <cylinderGeometry args={[0.22, 0.3, 2.6, 8]} />
             <meshStandardMaterial color="#3a3a3a" />
           </mesh>
           <mesh rotation={[0.6, 0.4, 0]}>
             <sphereGeometry
-              args={[1.1, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.55]}
+              args={[1.35, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.55]}
             />
             <meshStandardMaterial
-              color="#8a9aaa"
-              metalness={0.55}
-              roughness={0.3}
+              color="#f0c060"
+              emissive="#c08020"
+              emissiveIntensity={0.4}
+              metalness={0.45}
+              roughness={0.28}
               side={THREE.DoubleSide}
             />
           </mesh>
@@ -189,15 +260,20 @@ function HardTarget({ target }: { target: CombatTarget }) {
       return (
         <group>
           <mesh>
-            <boxGeometry args={[2.4, 1.1, 1.2]} />
-            <meshStandardMaterial color="#4a5538" roughness={0.7} />
+            <boxGeometry args={[3.1, 1.35, 1.5]} />
+            <meshStandardMaterial
+              color="#c45a18"
+              emissive="#5a2008"
+              emissiveIntensity={0.3}
+              roughness={0.65}
+            />
           </mesh>
-          <mesh position={[0.7, -0.35, 0.55]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.28, 0.28, 0.22, 10]} />
+          <mesh position={[0.85, -0.4, 0.65]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.32, 0.32, 0.24, 10]} />
             <meshStandardMaterial color="#1a1a1a" />
           </mesh>
-          <mesh position={[-0.7, -0.35, 0.55]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.28, 0.28, 0.22, 10]} />
+          <mesh position={[-0.85, -0.4, 0.65]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.32, 0.32, 0.24, 10]} />
             <meshStandardMaterial color="#1a1a1a" />
           </mesh>
         </group>
@@ -218,7 +294,7 @@ function ProjectileMeshes({
     if (!parent) return;
     while (pool.current.length < shots.length) {
       const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(0.18, 6, 6),
+        new THREE.SphereGeometry(0.32, 8, 8),
         new THREE.MeshBasicMaterial({ color: "#ffe08a" }),
       );
       parent.add(mesh);
@@ -234,9 +310,70 @@ function ProjectileMeshes({
       mesh.visible = true;
       mesh.position.copy(shot.position);
       const mat = mesh.material as THREE.MeshBasicMaterial;
-      mat.color.set(shot.owner === "player" ? "#ffe08a" : "#ff5a3a");
+      mat.color.set(shot.owner === "player" ? "#ffb020" : "#ff5a3a");
     }
   });
+  return <group ref={group} />;
+}
+
+function BlastMeshes({
+  flightState,
+}: {
+  flightState: React.MutableRefObject<FlightState>;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const pool = useRef<THREE.Group[]>([]);
+
+  useFrame(() => {
+    const blasts = flightState.current.blasts;
+    const parent = group.current;
+    if (!parent) return;
+    while (pool.current.length < blasts.length) {
+      const g = new THREE.Group();
+      const ball = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 12, 10),
+        new THREE.MeshBasicMaterial({
+          color: "#ff8a20",
+          transparent: true,
+          opacity: 0.85,
+          depthWrite: false,
+        }),
+      );
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.85, 1.05, 28),
+        new THREE.MeshBasicMaterial({
+          color: "#ffe080",
+          transparent: true,
+          opacity: 0.7,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      g.add(ball);
+      g.add(ring);
+      parent.add(g);
+      pool.current.push(g);
+    }
+    for (let i = 0; i < pool.current.length; i++) {
+      const g = pool.current[i];
+      const blast = blasts[i];
+      if (!blast) {
+        g.visible = false;
+        continue;
+      }
+      g.visible = true;
+      g.position.copy(blast.position);
+      const t = blast.age / blast.life;
+      const scale = blast.radius * (0.18 + t * 0.95);
+      g.scale.setScalar(scale);
+      const ball = g.children[0] as THREE.Mesh;
+      const ring = g.children[1] as THREE.Mesh;
+      (ball.material as THREE.MeshBasicMaterial).opacity = 0.75 * (1 - t);
+      (ring.material as THREE.MeshBasicMaterial).opacity = 0.85 * (1 - t);
+    }
+  });
+
   return <group ref={group} />;
 }
 
@@ -267,7 +404,7 @@ export function ExtractMarker({
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[10, 13, 40]} />
         <meshBasicMaterial
-          color="#3dff7a"
+          color="#c4a24a"
           transparent
           opacity={0.55}
           side={THREE.DoubleSide}

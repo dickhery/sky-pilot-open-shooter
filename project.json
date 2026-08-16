@@ -1,12 +1,12 @@
 {
-  "overview": "A hybrid air-to-ground open shooter: fly a strike jet or attack helicopter over a bounded theater, land or switch to a hovercraft, clear enemy outposts, then extract — or push the next sector for a multiplier.",
+  "overview": "IRONFRONT is a hybrid air-to-ground war game: fly a strike jet or attack helicopter over a bounded theater, blast orange-marked outposts with explosive rounds, then extract — or push the next sector for a multiplier.",
   "features": [
     "Main menu with After-Action Logs, Missions, Briefing Room, and Leaderboard",
     "Six bounded theaters with Daytime, Nighttime, and Partly Cloudy conditions",
     "F-27 Viper strike jet and AH-9 Spectre attack helicopter, plus hovercraft and on-foot combat",
+    "Air-to-ground blasts with a dirt-impact radius so aircraft can clear outposts from altitude",
     "Arcade loop: drop in, clear sectors, extract or continue for multipliers",
-    "Client-side combat with a single authenticated canister write on extract",
-    "After-action logs and a capped public leaderboard"
+    "Client-side combat with a single authenticated canister write on extract"
   ],
   "category": "game",
   "tags": [
@@ -14,7 +14,7 @@
     "3d-game",
     "combat-flight",
     "helicopter",
-    "interactive"
+    "war"
   ],
-  "last_updated": "2026-08-16T12:00:00.000Z"
+  "last_updated": "2026-08-16T18:00:00.000Z"
 }
