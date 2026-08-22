@@ -276,32 +276,37 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
             </mesh>
             {!cockpitView && (
               <>
+                {/*
+                  Jet wing slab is y≈0.05–0.15. At x=±2.7 the chord runs
+                  z≈0.54 (LE) to z≈1.85 (TE). Sit the flag on the skin,
+                  mid-chord, not inside the mesh or ahead of the LE.
+                */}
                 <FlagDecal
                   code={playerFlag}
-                  width={0.98}
-                  height={0.58}
-                  position={[2.55, 0.074, 0.12]}
+                  width={1.05}
+                  height={0.62}
+                  position={[2.7, 0.168, 1.22]}
                   rotation={[-Math.PI / 2, 0, 0]}
                 />
                 <FlagDecal
                   code={playerFlag}
-                  width={0.98}
-                  height={0.58}
-                  position={[-2.55, 0.074, 0.12]}
+                  width={1.05}
+                  height={0.62}
+                  position={[-2.7, 0.168, 1.22]}
                   rotation={[-Math.PI / 2, 0, 0]}
                 />
                 <FlagDecal
                   code={playerFlag}
-                  width={0.98}
-                  height={0.58}
-                  position={[2.55, 0.006, 0.12]}
+                  width={1.05}
+                  height={0.62}
+                  position={[2.7, 0.032, 1.22]}
                   rotation={[Math.PI / 2, 0, 0]}
                 />
                 <FlagDecal
                   code={playerFlag}
-                  width={0.98}
-                  height={0.58}
-                  position={[-2.55, 0.006, 0.12]}
+                  width={1.05}
+                  height={0.62}
+                  position={[-2.7, 0.032, 1.22]}
                   rotation={[Math.PI / 2, 0, 0]}
                 />
               </>
