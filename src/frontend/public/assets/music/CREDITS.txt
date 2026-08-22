@@ -13,3 +13,8 @@ Nighttime
 Partly cloudy
   Cloudy Valley Tour — Rainy_Sky_Protocol_1.mp3
   Storm Front Sprint — Rainy_Sky_Protocol_2.mp3
+
+SFX
+  Cannon / gunshot — shot.mp3
+  Source: Pixabay — "film special effects simple gunshot reverb test"
+  https://pixabay.com/sound-effects/film-special-effects-simple-gunshot-reverb-test-101093/

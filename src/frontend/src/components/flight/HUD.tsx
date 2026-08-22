@@ -32,6 +32,7 @@ interface HUDProps {
     name: string;
     distance: number;
     bearing: number;
+    relativeDeg: number;
     kind?: "gate" | "runway";
     index?: number;
     total?: number;
@@ -118,7 +119,10 @@ export function HUD({
       {/* Top-center: mission progress + objective */}
       <div className="absolute left-1/2 top-2 flex w-[min(100%,36rem)] -translate-x-1/2 flex-col items-center gap-1 px-2 sm:top-4 sm:gap-1.5">
         {nextWaypoint && phase !== "crashed" && phase !== "complete" && (
-          <NavArrow heading={heading} bearing={nextWaypoint.bearing} />
+          <NavArrow
+            relativeDeg={nextWaypoint.relativeDeg}
+            distanceNm={nextWaypoint.distance}
+          />
         )}
         <div
           className="hud-scanlines glow-instrument flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-md border border-primary/50 bg-black/70 px-2 py-1 backdrop-blur sm:gap-3 sm:px-4 sm:py-1.5"
@@ -425,21 +429,59 @@ export function HUD({
   );
 }
 
-function NavArrow({ heading, bearing }: { heading: number; bearing: number }) {
-  const rel = ((((bearing - heading + 540) % 360) + 360) % 360) - 180;
+function NavArrow({
+  relativeDeg,
+  distanceNm,
+}: {
+  relativeDeg: number;
+  distanceNm: number;
+}) {
+  const rel = Math.max(-180, Math.min(180, relativeDeg));
+  const onCourse = Math.abs(rel) < 12;
+  const cue = onCourse ? "AHEAD" : rel < 0 ? "LEFT" : "RIGHT";
   return (
     <div
       className="flex flex-col items-center gap-0.5"
       data-ocid="flight.hud.nav_arrow"
+      aria-label={`Steer ${cue.toLowerCase()} toward objective`}
     >
-      <div
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-accent/60 bg-card/80 text-accent shadow-instrument-glow"
-        style={{ transform: `rotate(${rel}deg)` }}
-        aria-hidden="true"
-      >
-        <Navigation className="h-5 w-5" />
+      <div className="relative flex h-14 w-14 items-center justify-center">
+        <div
+          className="absolute inset-0 rounded-full border border-primary/35 bg-black/60"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute left-1/2 top-0 h-1.5 w-0.5 -translate-x-1/2 rounded-full bg-primary"
+          aria-hidden="true"
+          title="Nose"
+        />
+        <div
+          className={`relative flex h-11 w-11 items-center justify-center ${
+            onCourse ? "text-primary" : "text-accent"
+          }`}
+          style={{ transform: `rotate(${rel}deg)` }}
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-10 w-10 drop-shadow"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M12 2.5 L19.5 20.5 L12 16.2 L4.5 20.5 Z" />
+          </svg>
+        </div>
       </div>
-      <span className="hud-label text-[9px] text-accent">Nav</span>
+      <span
+        className={`hud-label text-[9px] font-bold ${
+          onCourse ? "text-primary" : "text-accent"
+        }`}
+      >
+        {cue}
+        <span className="ml-1 font-normal text-muted-foreground">
+          {Math.max(0, distanceNm).toFixed(1)} nm
+        </span>
+      </span>
     </div>
   );
 }

@@ -38,7 +38,10 @@ export const PLAYER_MAX_HP = 100;
 export const INTERACT_RANGE = 10;
 
 const G = 9.81;
+/** m/s² on air-launched rounds so a level shot still falls onto dirt. */
+const SHOT_GRAVITY = 64;
 const _forward = new THREE.Vector3();
+const _muzzleDir = new THREE.Vector3();
 let nextShotId = 1;
 
 export type LandingHint =
@@ -461,16 +464,22 @@ function tryInteract(
 
 function muzzleOrigin(state: FlightState): THREE.Vector3 {
   const heading = state.rotation.y;
+  const pitch = state.vehicleMode === "air" ? state.rotation.x : 0;
   const lift =
     state.vehicleMode === "onFoot"
       ? 1.5
       : state.vehicleMode === "hovercraft"
         ? 1.4
         : 0.2;
+  _muzzleDir.set(
+    -Math.sin(heading) * Math.cos(pitch),
+    Math.sin(pitch),
+    -Math.cos(heading) * Math.cos(pitch),
+  );
   return new THREE.Vector3(
-    state.position.x - Math.sin(heading) * 3.2,
-    state.position.y + lift,
-    state.position.z - Math.cos(heading) * 3.2,
+    state.position.x + _muzzleDir.x * 3.2,
+    state.position.y + lift + _muzzleDir.y * 3.2,
+    state.position.z + _muzzleDir.z * 3.2,
   );
 }
 
@@ -480,11 +489,10 @@ function firePlayer(state: FlightState, plane: Plane): void {
   const fromAir = state.vehicleMode === "air";
   const pitch = fromAir ? state.rotation.x : 0;
   const speed = fromAir ? (plane.class === "jet" ? 260 : 210) : 220;
-  // Air shots bias downward so a level strafing run still hits dirt.
-  const downBias = fromAir ? 0.32 : 0;
+  // Fire along the nose. Gravity (not a muzzle dip) is what drops the round.
   const dir = new THREE.Vector3(
     -Math.sin(heading) * Math.cos(pitch),
-    Math.sin(pitch) - downBias,
+    Math.sin(pitch),
     -Math.cos(heading) * Math.cos(pitch),
   ).normalize();
   state.projectiles.push({
@@ -542,7 +550,7 @@ function stepProjectiles(state: FlightState, dt: number): void {
   for (const shot of state.projectiles) {
     shot.life -= dt;
     if (shot.gravity) {
-      shot.velocity.y -= 42 * dt;
+      shot.velocity.y -= SHOT_GRAVITY * dt;
     }
     shot.position.addScaledVector(shot.velocity, dt);
     if (shot.life <= 0) continue;
@@ -1087,6 +1095,29 @@ export function bearing(from: THREE.Vector3, to: THREE.Vector3): number {
   const dx = to.x - from.x;
   const dz = to.z - from.z;
   return (THREE.MathUtils.radToDeg(Math.atan2(dx, -dz)) + 360) % 360;
+}
+
+/** Compass degrees (0 = −Z / north) from Three.js yaw. +yaw turns west. */
+export function compassDegFromYaw(yawRad: number): number {
+  return ((-THREE.MathUtils.radToDeg(yawRad) % 360) + 360) % 360;
+}
+
+/**
+ * Signed heading error to a world point: 0 is dead ahead, + is turn right
+ * (clockwise), − is turn left. Uses the same forward vector as movement.
+ */
+export function navRelativeDeg(
+  from: THREE.Vector3,
+  yawRad: number,
+  to: THREE.Vector3,
+): number {
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  const fx = -Math.sin(yawRad);
+  const fz = -Math.cos(yawRad);
+  return THREE.MathUtils.radToDeg(
+    Math.atan2(fx * dz - fz * dx, fx * dx + fz * dz),
+  );
 }
 
 export function mpsToKts(mps: number): number {

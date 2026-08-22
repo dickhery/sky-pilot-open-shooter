@@ -52,11 +52,20 @@ export function useFlightAudio(
   const engine = useRef<EngineKit | null>(null);
   const music = useRef<HTMLAudioElement | null>(null);
   const lastAirborne = useRef(false);
+  const lastShots = useRef(0);
+  const shotRaw = useRef<ArrayBuffer | null>(null);
   const optionsRef = useRef(options);
   optionsRef.current = options;
   const unlocked = useRef(false);
 
   useEffect(() => {
+    void fetch(SHOT_SRC)
+      .then((res) => (res.ok ? res.arrayBuffer() : null))
+      .then((buf) => {
+        shotRaw.current = buf;
+      })
+      .catch(() => {});
+
     const el = new Audio();
     el.loop = true;
     el.preload = "none";
@@ -71,7 +80,10 @@ export function useFlightAudio(
       if (!engine.current) {
         engine.current = createEngine();
       }
-      void engine.current?.ctx.resume();
+      if (engine.current) {
+        void engine.current.ctx.resume();
+        loadShotBuffer(engine.current, shotRaw.current);
+      }
       syncMusic();
     };
 
@@ -138,6 +150,15 @@ export function useFlightAudio(
           bump(kit, 0.08, 0.12);
         }
         lastAirborne.current = s.airborne;
+        if (s.shotsFired < lastShots.current) {
+          lastShots.current = s.shotsFired;
+        } else if (s.shotsFired > lastShots.current && !opts.engineMuted) {
+          const n = Math.min(3, s.shotsFired - lastShots.current);
+          lastShots.current = s.shotsFired;
+          for (let i = 0; i < n; i++) playShot(kit);
+        } else {
+          lastShots.current = s.shotsFired;
+        }
       }
       syncMusic();
       raf = requestAnimationFrame(tick);
@@ -166,6 +187,39 @@ interface EngineKit {
   engineGain: GainNode;
   windGain: GainNode;
   master: GainNode;
+  shotBuf: AudioBuffer | null;
+}
+
+const SHOT_SRC = "/assets/music/shot.mp3";
+const SHOT_VOLUME = 0.42;
+
+function playShot(kit: EngineKit): void {
+  if (!kit.shotBuf) return;
+  const src = kit.ctx.createBufferSource();
+  src.buffer = kit.shotBuf;
+  const g = kit.ctx.createGain();
+  g.gain.value = SHOT_VOLUME;
+  src.connect(g);
+  g.connect(kit.master);
+  src.start();
+}
+
+function loadShotBuffer(kit: EngineKit, prefetched: ArrayBuffer | null): void {
+  if (kit.shotBuf) return;
+  const raw = prefetched
+    ? Promise.resolve(prefetched.slice(0))
+    : fetch(SHOT_SRC).then((res) => {
+        if (!res.ok) throw new Error("shot missing");
+        return res.arrayBuffer();
+      });
+  void raw
+    .then((buf) => kit.ctx.decodeAudioData(buf))
+    .then((decoded) => {
+      kit.shotBuf = decoded;
+    })
+    .catch(() => {
+      /* keep flying silent if the clip fails to decode */
+    });
 }
 
 function createEngine(): EngineKit | null {
@@ -215,7 +269,15 @@ function createEngine(): EngineKit | null {
   windGain.connect(master);
   noise.start();
 
-  return { ctx, engineOsc, engineOsc2, engineGain, windGain, master };
+  return {
+    ctx,
+    engineOsc,
+    engineOsc2,
+    engineGain,
+    windGain,
+    master,
+    shotBuf: null,
+  };
 }
 
 function makeNoise(ctx: AudioContext): AudioBuffer {

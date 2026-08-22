@@ -9,10 +9,12 @@ import {
   ROTATE_SPEED_KTS,
   bearing,
   buildSceneLayout,
+  compassDegFromYaw,
   computeScore,
   createInitialFlightState,
   currentNavTarget,
   missionStep,
+  navRelativeDeg,
   remainingInSector,
 } from "@/components/flight/flightPhysics";
 import { Button } from "@/components/ui/button";
@@ -36,7 +38,6 @@ import type {
 import { useNavigate } from "@tanstack/react-router";
 import { Plane as PlaneIcon, Rocket } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
 
 /**
  * Convert a backend Weather enum variant to the frontend Weather type.
@@ -121,6 +122,7 @@ export function FlightSimulationPage() {
     name: string;
     distance: number;
     bearing: number;
+    relativeDeg: number;
     kind: "gate" | "runway";
     index: number;
     total: number;
@@ -161,7 +163,7 @@ export function FlightSimulationPage() {
       setTelemetry({
         altitude: Math.max(0, (s.position.y - 1.07) * 3.28),
         airspeed: s.speed * 1.94,
-        heading: THREE.MathUtils.radToDeg(s.rotation.y),
+        heading: compassDegFromYaw(s.rotation.y),
         verticalSpeed: s.verticalSpeed * 196.85,
         airborne: s.airborne,
         landingHint: s.landingHint,
@@ -192,6 +194,7 @@ export function FlightSimulationPage() {
           name,
           distance: s.position.distanceTo(nav.position) / 1852,
           bearing: bearing(s.position, nav.position),
+          relativeDeg: navRelativeDeg(s.position, s.rotation.y, nav.position),
           kind: nav.kind,
           index: Math.min(s.nextCheckpoint + 1, layout.checkpoints.length),
           total: layout.checkpoints.length,
@@ -282,9 +285,7 @@ export function FlightSimulationPage() {
     );
   }
 
-  const landingHdg = Math.round(
-    ((THREE.MathUtils.radToDeg(layout.landingHeading) % 360) + 360) % 360,
-  );
+  const landingHdg = Math.round(compassDegFromYaw(layout.landingHeading));
   const { objective, subObjective } = getMissionBrief(
     phase,
     telemetry.airborne,
@@ -406,7 +407,7 @@ function getMissionBrief(
         ? {
             objective: `Destroy the outpost at ${waypointName}`,
             subObjective:
-              "Orange beacons mark targets. F fires — rounds drop and blast the dirt",
+              "Orange beacons mark targets. F fires — follow the top arrow to the outpost",
           }
         : canDismount
           ? {
