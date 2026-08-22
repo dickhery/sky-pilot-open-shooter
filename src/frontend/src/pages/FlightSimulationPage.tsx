@@ -110,6 +110,10 @@ export function FlightSimulationPage() {
     engineMuted: flightOver,
     musicMuted: !musicOn || flightOver || showResults,
     planId,
+    night:
+      selectedPlan != null &&
+      mapWeatherToFrontend(selectedPlan.weather) === "Nighttime",
+    vehicleClass: selectedPlane?.class === "heli" ? "heli" : "jet",
   });
   const toggleMusic = useCallback(() => {
     setMusicOn((on) => {

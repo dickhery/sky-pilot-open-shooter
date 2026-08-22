@@ -53,8 +53,8 @@ export function FlagDecal({
         side={THREE.DoubleSide}
         toneMapped={false}
         polygonOffset
-        polygonOffsetFactor={-4}
-        polygonOffsetUnits={-4}
+        polygonOffsetFactor={-1}
+        polygonOffsetUnits={-1}
       />
     </mesh>
   );

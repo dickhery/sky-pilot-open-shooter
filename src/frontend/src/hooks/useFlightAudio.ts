@@ -7,22 +7,39 @@ export interface FlightAudioOptions {
   engineMuted: boolean;
   /** Pause the route soundtrack. */
   musicMuted: boolean;
-  /** Flight-plan id 1–6 picks a distinct soundtrack. */
+  /** Picks night_1 vs night_2 (or jet/heli pair) so maps don't share one loop. */
   planId: number;
+  /** Night maps always use the night pair, even in a jet or heli. */
+  night: boolean;
+  /** Non-night maps: jet vs helicopter soundtrack. */
+  vehicleClass: "jet" | "heli";
 }
 
 const MUSIC_PREF_KEY = "sky-pilot-music";
-/** Suno masters are loud — keep them under the engine rumble. */
+/** Keep scored tracks under the engine rumble. */
 const MUSIC_VOLUME = 0.32;
 
-const TRACKS: Record<number, string> = {
-  1: "/assets/music/Protocol_Runway_Daytime.mp3",
-  2: "/assets/music/Protocol_Runway_Daytime_2.mp3",
-  3: "/assets/music/Night_Flight_Protocol.mp3",
-  4: "/assets/music/Fly_All_Night.mp3",
-  5: "/assets/music/Rainy_Sky_Protocol_1.mp3",
-  6: "/assets/music/Rainy_Sky_Protocol_2.mp3",
-};
+const NIGHT_TRACKS = [
+  "/assets/music/night_1.mp3",
+  "/assets/music/night_2.mp3",
+] as const;
+const HELI_TRACKS = [
+  "/assets/music/helicopter_1.mp3",
+  "/assets/music/helicopter_2.mp3",
+] as const;
+const JET_TRACKS = [
+  "/assets/music/jet_1.mp3",
+  "/assets/music/jet_2.mp3",
+] as const;
+
+function trackFor(options: FlightAudioOptions): string {
+  const pair = options.night
+    ? NIGHT_TRACKS
+    : options.vehicleClass === "heli"
+      ? HELI_TRACKS
+      : JET_TRACKS;
+  return pair[options.planId % 2];
+}
 
 export function readMusicPref(): boolean {
   try {
@@ -41,8 +58,8 @@ export function writeMusicPref(on: boolean): void {
 }
 
 /**
- * Engine rumble is synthesized. Route music is the Suno soundtracks
- * in /assets/music, one per flight plan / weather pair.
+ * Engine rumble is synthesized. Route music is night / helicopter / jet
+ * stems in /assets/music, chosen from weather and airframe.
  */
 export function useFlightAudio(
   flightState: React.MutableRefObject<FlightState>,
@@ -91,7 +108,7 @@ export function useFlightAudio(
       const elNow = music.current;
       if (!elNow) return;
       const opts = optionsRef.current;
-      const src = TRACKS[opts.planId] ?? TRACKS[1];
+      const src = trackFor(opts);
       const want = Boolean(src) && !opts.musicMuted;
       if (!want) {
         elNow.pause();

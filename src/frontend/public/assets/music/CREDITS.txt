@@ -1,18 +1,16 @@
-Sky Pilot route soundtracks.
+IRONFRONT in-flight music.
 
-Created with Suno AI. Used as in-flight music for each weather pair.
+Night maps (Harbor Raid, Night Stalker)
+  night_1.mp3
+  night_2.mp3
 
-Daytime
-  Morning Coastal Hop  — Protocol_Runway_Daytime.mp3
-  Midday Crosswind Run — Protocol_Runway_Daytime_2.mp3
+Helicopter on daytime / cloudy maps
+  helicopter_1.mp3
+  helicopter_2.mp3
 
-Nighttime
-  Midnight Harbor Approach — Night_Flight_Protocol.mp3
-  Night Express            — Fly_All_Night.mp3
-
-Partly cloudy
-  Cloudy Valley Tour — Rainy_Sky_Protocol_1.mp3
-  Storm Front Sprint — Rainy_Sky_Protocol_2.mp3
+Strike jet on daytime / cloudy maps
+  jet_1.mp3
+  jet_2.mp3
 
 SFX
   Cannon / gunshot — shot.mp3

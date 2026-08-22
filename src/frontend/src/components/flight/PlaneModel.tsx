@@ -278,30 +278,30 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
               <>
                 <FlagDecal
                   code={playerFlag}
-                  width={2.15}
-                  height={1.25}
-                  position={[2.85, 0.18, 0.05]}
+                  width={0.98}
+                  height={0.58}
+                  position={[2.55, 0.074, 0.12]}
                   rotation={[-Math.PI / 2, 0, 0]}
                 />
                 <FlagDecal
                   code={playerFlag}
-                  width={2.15}
-                  height={1.25}
-                  position={[-2.85, 0.18, 0.05]}
+                  width={0.98}
+                  height={0.58}
+                  position={[-2.55, 0.074, 0.12]}
                   rotation={[-Math.PI / 2, 0, 0]}
                 />
                 <FlagDecal
                   code={playerFlag}
-                  width={2.15}
-                  height={1.25}
-                  position={[2.85, -0.12, 0.05]}
+                  width={0.98}
+                  height={0.58}
+                  position={[2.55, 0.006, 0.12]}
                   rotation={[Math.PI / 2, 0, 0]}
                 />
                 <FlagDecal
                   code={playerFlag}
-                  width={2.15}
-                  height={1.25}
-                  position={[-2.85, -0.12, 0.05]}
+                  width={0.98}
+                  height={0.58}
+                  position={[-2.55, 0.006, 0.12]}
                   rotation={[Math.PI / 2, 0, 0]}
                 />
               </>
@@ -382,16 +382,16 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
               <>
                 <FlagDecal
                   code={playerFlag}
-                  width={0.95}
-                  height={0.62}
-                  position={[0.08, 0.72, -0.15]}
+                  width={0.52}
+                  height={0.32}
+                  position={[0.048, 0.62, -0.12]}
                   rotation={[0, Math.PI / 2, 0]}
                 />
                 <FlagDecal
                   code={playerFlag}
-                  width={0.95}
-                  height={0.62}
-                  position={[-0.08, 0.72, -0.15]}
+                  width={0.52}
+                  height={0.32}
+                  position={[-0.048, 0.62, -0.12]}
                   rotation={[0, -Math.PI / 2, 0]}
                 />
               </>

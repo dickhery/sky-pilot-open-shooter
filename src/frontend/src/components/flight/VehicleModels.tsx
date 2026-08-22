@@ -95,37 +95,37 @@ export function HelicopterModel({
         <>
           <FlagDecal
             code={playerFlag}
-            width={1.05}
-            height={0.68}
-            position={[0.7, 0.22, 0.12]}
+            width={0.52}
+            height={0.32}
+            position={[0.682, 0.2, 0.18]}
             rotation={[0, Math.PI / 2, 0]}
           />
           <FlagDecal
             code={playerFlag}
-            width={1.05}
-            height={0.68}
-            position={[-0.7, 0.22, 0.12]}
+            width={0.52}
+            height={0.32}
+            position={[-0.682, 0.2, 0.18]}
             rotation={[0, -Math.PI / 2, 0]}
           />
           <FlagDecal
             code={playerFlag}
-            width={1.35}
-            height={0.8}
-            position={[1.35, 0.08, 0.2]}
+            width={0.7}
+            height={0.4}
+            position={[1.15, 0.008, 0.2]}
             rotation={[-Math.PI / 2, 0, 0]}
           />
           <FlagDecal
             code={playerFlag}
-            width={1.35}
-            height={0.8}
-            position={[-1.35, 0.08, 0.2]}
+            width={0.7}
+            height={0.4}
+            position={[-1.15, 0.008, 0.2]}
             rotation={[-Math.PI / 2, 0, 0]}
           />
           <FlagDecal
             code={playerFlag}
-            width={0.85}
-            height={0.55}
-            position={[0.08, 0.78, 3.52]}
+            width={0.4}
+            height={0.26}
+            position={[0.048, 0.78, 3.52]}
             rotation={[0, Math.PI / 2, 0]}
           />
         </>
