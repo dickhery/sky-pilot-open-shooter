@@ -20,11 +20,12 @@ import {
 } from "@/lib/countries";
 import {
   CHANGE_GAME_ACCOUNT,
+  type PlayerIcpAccount,
   createLedgerActor,
   formatIcp,
   formatNsDate,
   hoursUntil,
-  readIcpBalanceE8s,
+  readPlayerIcpAccount,
   transferChangeGamePayment,
 } from "@/lib/icp-ledger";
 import { safeGetCanisterEnv } from "@icp-sdk/core/agent/canister-env";
@@ -36,9 +37,10 @@ import {
   Loader2,
   LogIn,
   RefreshCw,
+  Wallet,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 /**
  * Pay 1 ICP to lock a player flag and an enemy flag into the theater
@@ -63,7 +65,8 @@ export function ChangeTheGamePage() {
   const [result, setResult] = useState<ConfirmView | null>(null);
   const [pendingBlock, setPendingBlock] = useState<bigint | null>(null);
   const [manualBlock, setManualBlock] = useState("");
-  const [balanceE8s, setBalanceE8s] = useState<bigint | null>(null);
+  const [wallet, setWallet] = useState<PlayerIcpAccount | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [reservation, setReservation] = useState<PrepareView | null>(null);
 
@@ -76,6 +79,8 @@ export function ChangeTheGamePage() {
 
   const sameFlags = playerFlag === enemyFlag;
   const paying = busy !== null;
+  const neededE8s = amount + fee;
+  const funded = wallet !== null && wallet.balanceE8s >= neededE8s;
 
   async function copyText(label: string, value: string) {
     try {
@@ -87,17 +92,27 @@ export function ChangeTheGamePage() {
     }
   }
 
-  async function refreshBalance() {
-    if (!identity) return;
+  const refreshWallet = useCallback(async () => {
+    if (!isAuthenticated || !identity) {
+      setWallet(null);
+      return;
+    }
+    setWalletLoading(true);
     try {
       const env = safeGetCanisterEnv();
       const ledger = createLedgerActor(identity, env?.IC_ROOT_KEY);
-      const bal = await readIcpBalanceE8s(ledger, identity.getPrincipal());
-      setBalanceE8s(bal);
+      const next = await readPlayerIcpAccount(ledger, identity.getPrincipal());
+      setWallet(next);
     } catch {
-      setBalanceE8s(null);
+      setWallet(null);
+    } finally {
+      setWalletLoading(false);
     }
-  }
+  }, [isAuthenticated, identity]);
+
+  useEffect(() => {
+    void refreshWallet();
+  }, [refreshWallet]);
 
   async function confirmWithRetries(blockIndex: bigint) {
     let last: unknown;
@@ -146,7 +161,7 @@ export function ChangeTheGamePage() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(null);
-      void refreshBalance();
+      void refreshWallet();
     }
   }
 
@@ -242,6 +257,37 @@ export function ChangeTheGamePage() {
 
       <ActiveBanner active={active} />
 
+      {isAuthenticated ? (
+        <PlayerWalletCard
+          wallet={wallet}
+          loading={walletLoading}
+          amount={amount}
+          fee={fee}
+          copied={copied}
+          onCopy={copyText}
+          onRefresh={() => refreshWallet()}
+        />
+      ) : (
+        <Card className="border-border bg-card/80">
+          <CardContent className="flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Sign in with Internet Identity to see your in-game account ID and
+              ICP balance. Send ICP to that account, then pay 1.0 ICP to change
+              the flags.
+            </p>
+            <Button
+              type="button"
+              onClick={() => login()}
+              disabled={isLoggingIn}
+              className="hud-label shrink-0 gap-2"
+            >
+              <LogIn className="size-4" aria-hidden="true" />
+              {isLoggingIn ? "Signing in…" : "Sign in"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <HowItWorks dest={dest} amount={amount} fee={fee} />
 
       <QueueBoard
@@ -305,32 +351,16 @@ export function ChangeTheGamePage() {
           ) : (
             <div className="flex flex-col gap-3">
               <p className="text-xs text-muted-foreground">
-                Payment leaves the Internet Identity account you signed in with.
-                Fund it with at least {formatIcp(amount + fee)} ICP (1.0 plus
-                the ledger fee of {formatIcp(fee)}). You can also pay from
-                another wallet using the memo created when you tap pay, then
-                paste the ledger block index below.
+                Send ICP to your in-game account ID above. When the balance
+                shows at least {formatIcp(amount + fee)} ICP (1.0 plus the{" "}
+                {formatIcp(fee)} ledger fee), tap Pay — the 1.0 ICP leaves that
+                same account.
               </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refreshBalance()}
-                >
-                  Check II balance
-                </Button>
-                {balanceE8s !== null && (
-                  <span className="hud-label text-[11px] text-muted-foreground">
-                    {formatIcp(balanceE8s)} ICP
-                  </span>
-                )}
-              </div>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
                   onClick={() => payAndLock()}
-                  disabled={paying || sameFlags}
+                  disabled={paying || sameFlags || !funded}
                   className="hud-label gap-2"
                   data-ocid="change_game.pay.button"
                 >
@@ -431,6 +461,150 @@ export function ChangeTheGamePage() {
   );
 }
 
+function PlayerWalletCard({
+  wallet,
+  loading,
+  amount,
+  fee,
+  copied,
+  onCopy,
+  onRefresh,
+}: {
+  wallet: PlayerIcpAccount | null;
+  loading: boolean;
+  amount: bigint;
+  fee: bigint;
+  copied: string | null;
+  onCopy: (label: string, value: string) => void;
+  onRefresh: () => void;
+}) {
+  const needed = amount + fee;
+  const short = fundedLabel(wallet, needed);
+  return (
+    <Card
+      className="border-primary/35 bg-primary/5"
+      data-ocid="change_game.wallet.card"
+    >
+      <CardContent className="flex flex-col gap-4 py-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2 text-primary">
+            <Wallet className="size-5" aria-hidden="true" />
+            <h2 className="font-display text-lg font-semibold text-foreground">
+              Your in-game ICP account
+            </h2>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onRefresh}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="size-4" aria-hidden="true" />
+            )}
+            Refresh
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          This is the account the game pays from. Copy the account ID and send
+          ICP to it from the NNS, an exchange, or another wallet. Wait a few
+          seconds, then refresh until the balance covers the payment.
+        </p>
+        {wallet ? (
+          <dl className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <dt className="hud-label text-[10px] text-muted-foreground">
+                Account ID
+              </dt>
+              <dd className="flex items-start gap-2">
+                <code className="break-all font-mono text-xs text-foreground">
+                  {wallet.accountId}
+                </code>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => onCopy("player-account", wallet.accountId)}
+                  data-ocid="change_game.wallet.copy_account"
+                >
+                  <Copy className="size-3.5" aria-hidden="true" />
+                  {copied === "player-account" ? "Copied" : "Copy"}
+                </Button>
+              </dd>
+            </div>
+            <div className="flex flex-col gap-1">
+              <dt className="hud-label text-[10px] text-muted-foreground">
+                Principal
+              </dt>
+              <dd className="flex items-start gap-2">
+                <code className="break-all font-mono text-xs text-muted-foreground">
+                  {wallet.principalText}
+                </code>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => onCopy("principal", wallet.principalText)}
+                >
+                  <Copy className="size-3.5" aria-hidden="true" />
+                  {copied === "principal" ? "Copied" : "Copy"}
+                </Button>
+              </dd>
+            </div>
+            <div className="flex flex-col gap-1">
+              <dt className="hud-label text-[10px] text-muted-foreground">
+                Balance
+              </dt>
+              <dd className="font-display text-2xl font-semibold text-foreground">
+                {formatIcp(wallet.balanceE8s)}{" "}
+                <span className="text-base font-normal text-muted-foreground">
+                  ICP
+                </span>
+              </dd>
+            </div>
+            <p
+              className={`text-sm ${short.ok ? "text-primary" : "text-accent"}`}
+            >
+              {short.text}
+            </p>
+          </dl>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {loading
+              ? "Loading your account ID and balance…"
+              : "Could not load your account. Tap Refresh."}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function fundedLabel(
+  wallet: PlayerIcpAccount | null,
+  needed: bigint,
+): { ok: boolean; text: string } {
+  if (!wallet) {
+    return { ok: false, text: "Balance unknown — tap Refresh." };
+  }
+  if (wallet.balanceE8s >= needed) {
+    return {
+      ok: true,
+      text: `Ready to pay. Need ${formatIcp(needed)} ICP (1.0 plus the ledger fee).`,
+    };
+  }
+  const missing = needed - wallet.balanceE8s;
+  return {
+    ok: false,
+    text: `Send at least ${formatIcp(missing)} more ICP to this account ID, then tap Refresh.`,
+  };
+}
+
 function ActiveBanner({
   active,
 }: {
@@ -489,10 +663,17 @@ function HowItWorks({
         </h2>
         <ol className="list-decimal space-y-2 pl-5">
           <li>
-            Sign in with Internet Identity, pick a player flag and an enemy
-            flag, then pay{" "}
-            <strong className="text-foreground">{formatIcp(amount)} ICP</strong>{" "}
-            plus a {formatIcp(fee)} ICP ledger fee.
+            Sign in with Internet Identity. Your in-game ICP account ID and
+            balance appear on this page. Send at least{" "}
+            <strong className="text-foreground">
+              {formatIcp(amount + fee)} ICP
+            </strong>{" "}
+            ({formatIcp(amount)} plus a {formatIcp(fee)} ledger fee) to that
+            account ID from the NNS, an exchange, or another wallet.
+          </li>
+          <li>
+            After the balance updates, pick a player flag and an enemy flag,
+            then tap Pay. The 1.0 ICP is sent from your in-game account.
           </li>
           <li>
             Funds go to account{" "}

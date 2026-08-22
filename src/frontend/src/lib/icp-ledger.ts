@@ -44,6 +44,7 @@ const ledgerIdl = ({
       [],
     ),
     icrc1_balance_of: IDL.Func([Account], [IDL.Nat], ["query"]),
+    account_identifier: IDL.Func([Account], [IDL.Vec(IDL.Nat8)], ["query"]),
   });
 };
 
@@ -60,7 +61,17 @@ type LedgerService = {
     owner: Principal;
     subaccount: [] | [Uint8Array];
   }) => Promise<bigint>;
+  account_identifier: (account: {
+    owner: Principal;
+    subaccount: [] | [Uint8Array];
+  }) => Promise<Uint8Array>;
 };
+
+export interface PlayerIcpAccount {
+  principalText: string;
+  accountId: string;
+  balanceE8s: bigint;
+}
 
 function hexToBytes(hex: string): Uint8Array {
   const clean = hex.trim().toLowerCase();
@@ -90,6 +101,31 @@ export async function readIcpBalanceE8s(
   owner: Principal,
 ): Promise<bigint> {
   return ledger.icrc1_balance_of({ owner, subaccount: [] });
+}
+
+/** Default ICP account for an Internet Identity principal — the 64-hex id wallets send to. */
+export async function readPlayerIcpAccount(
+  ledger: LedgerService,
+  owner: Principal,
+): Promise<PlayerIcpAccount> {
+  const account = { owner, subaccount: [] as [] | [Uint8Array] };
+  const [balanceE8s, accountBlob] = await Promise.all([
+    ledger.icrc1_balance_of(account),
+    ledger.account_identifier(account),
+  ]);
+  return {
+    principalText: owner.toText(),
+    accountId: bytesToHex(accountBlob),
+    balanceE8s,
+  };
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) {
+    out += bytes[i].toString(16).padStart(2, "0");
+  }
+  return out;
 }
 
 export async function transferChangeGamePayment(
