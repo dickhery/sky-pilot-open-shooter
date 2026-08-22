@@ -198,7 +198,7 @@ export function Terrain({ layout }: { layout: SceneLayout }) {
 
 /** Instanced pines and a few rounded deciduous trees. */
 export function TreeField({ layout }: { layout: SceneLayout }) {
-  const count = layout.theme === "city" || layout.theme === "storm" ? 50 : 200;
+  const count = layout.theme === "city" || layout.theme === "storm" ? 70 : 280;
   const pines = useMemo(() => {
     const rand = seededRandom(77 + layout.planId * 13);
     const arr: { x: number; z: number; scale: number; rot: number }[] = [];
@@ -220,7 +220,7 @@ export function TreeField({ layout }: { layout: SceneLayout }) {
   const deciduous = useMemo(() => {
     const rand = seededRandom(131 + layout.planId * 9);
     const arr: { x: number; z: number; scale: number }[] = [];
-    const n = layout.theme === "city" ? 8 : 50;
+    const n = layout.theme === "city" ? 12 : 72;
     for (let i = 0; i < n; i++) {
       const x = (rand() - 0.5) * 1100;
       const z = (rand() - 0.35) * 1800;
@@ -312,7 +312,7 @@ function PlacedInstances({
   const meshRef = useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(() => {
     const mesh = meshRef.current;
-    if (!mesh) return;
+    if (!mesh || items.length === 0) return;
     const dummy = new THREE.Object3D();
     for (let i = 0; i < items.length; i++) {
       const t = items[i];
@@ -325,6 +325,7 @@ function PlacedInstances({
     mesh.instanceMatrix.needsUpdate = true;
   }, [items]);
 
+  if (items.length === 0) return null;
   return (
     <instancedMesh
       ref={meshRef}
@@ -333,6 +334,105 @@ function PlacedInstances({
     >
       <meshStandardMaterial color={color} roughness={0.9} />
     </instancedMesh>
+  );
+}
+
+/**
+ * Extra ground clutter — rocks, bushes, sheds — all instanced so draw
+ * calls stay low. Kept off runways and water.
+ */
+export function GroundDressing({ layout }: { layout: SceneLayout }) {
+  const rocks = useMemo(() => {
+    const rand = seededRandom(201 + layout.planId * 17);
+    const n = layout.theme === "ridge" ? 90 : 55;
+    const arr: { x: number; z: number; scale: number; rot: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      const x = (rand() - 0.5) * 1500;
+      const z = (rand() - 0.3) * 2100;
+      if (isRunwayCorridor(layout, x, z)) continue;
+      if (waterScore(layout.theme, x, z) > 0.4) continue;
+      arr.push({
+        x,
+        z,
+        scale: 0.6 + rand() * 1.8,
+        rot: rand() * Math.PI,
+      });
+    }
+    return arr;
+  }, [layout]);
+
+  const bushes = useMemo(() => {
+    const rand = seededRandom(317 + layout.planId * 5);
+    const arr: { x: number; z: number; scale: number; rot: number }[] = [];
+    const n = layout.theme === "city" ? 20 : 90;
+    for (let i = 0; i < n; i++) {
+      const x = (rand() - 0.5) * 1300;
+      const z = (rand() - 0.3) * 1900;
+      if (isRunwayCorridor(layout, x, z)) continue;
+      if (waterScore(layout.theme, x, z) > 0.45) continue;
+      arr.push({ x, z, scale: 0.5 + rand() * 0.9, rot: rand() * Math.PI });
+    }
+    return arr;
+  }, [layout]);
+
+  const sheds = useMemo(() => {
+    const rand = seededRandom(421 + layout.planId);
+    const arr: { x: number; z: number; scale: number; rot: number }[] = [];
+    const n = layout.theme === "city" ? 6 : 14;
+    for (let i = 0; i < n; i++) {
+      const x = (rand() - 0.5) * 900;
+      const z = (rand() - 0.25) * 1600;
+      if (isRunwayCorridor(layout, x, z)) continue;
+      if (waterScore(layout.theme, x, z) > 0.2) continue;
+      arr.push({
+        x,
+        z,
+        scale: 0.8 + rand() * 0.7,
+        rot: rand() * Math.PI * 2,
+      });
+    }
+    return arr;
+  }, [layout]);
+
+  const rockGeo = useMemo(() => new THREE.DodecahedronGeometry(1.1, 0), []);
+  const bushGeo = useMemo(() => {
+    const geo = new THREE.SphereGeometry(0.85, 6, 5);
+    geo.scale(1.1, 0.55, 1.1);
+    geo.translate(0, 0.4, 0);
+    return geo;
+  }, []);
+  const shedGeo = useMemo(() => {
+    const geo = new THREE.BoxGeometry(5.2, 2.4, 3.6);
+    geo.translate(0, 1.2, 0);
+    return geo;
+  }, []);
+  const roofGeo = useMemo(() => {
+    const geo = new THREE.ConeGeometry(3.6, 1.1, 4);
+    geo.rotateY(Math.PI / 4);
+    geo.translate(0, 2.7, 0);
+    return geo;
+  }, []);
+
+  return (
+    <group>
+      <PlacedInstances
+        geometry={rockGeo}
+        items={rocks}
+        color={layout.theme === "ridge" ? "#6a645c" : "#5a564c"}
+      />
+      <PlacedInstances geometry={bushGeo} items={bushes} color="#2a4228" />
+      {sheds.length > 0 && (
+        <>
+          <PlacedInstances
+            geometry={shedGeo}
+            items={sheds}
+            color="#8a6a48"
+            castShadow
+          />
+          <PlacedInstances geometry={roofGeo} items={sheds} color="#5a3a28" />
+        </>
+      )}
+    </group>
   );
 }
 
@@ -790,6 +890,18 @@ export function MapLandmarks({
           <sphereGeometry args={[0.9, 10, 10]} />
           <meshBasicMaterial color={night ? "#ff7a3a" : "#e24a3a"} />
         </mesh>
+        <mesh position={[18, 0.4, -8]} rotation={[0, 0.4, 0]}>
+          <boxGeometry args={[28, 0.7, 6]} />
+          <meshStandardMaterial color="#6a5a48" roughness={0.85} />
+        </mesh>
+        <mesh position={[14, 1.1, -8]}>
+          <boxGeometry args={[2.4, 1.6, 1.8]} />
+          <meshStandardMaterial color="#c4a060" />
+        </mesh>
+        <mesh position={[22, 1.1, -6]}>
+          <boxGeometry args={[2.2, 1.4, 1.6]} />
+          <meshStandardMaterial color="#b89858" />
+        </mesh>
         {night && (
           <pointLight
             position={[0, 9.4, 0]}
@@ -798,6 +910,46 @@ export function MapLandmarks({
             distance={60}
           />
         )}
+      </group>
+    );
+  }
+
+  if (layout.theme === "valley") {
+    return (
+      <group position={[wp.x - 40, 0, wp.z + 30]}>
+        <mesh position={[0, 6, 0]}>
+          <cylinderGeometry args={[2.4, 2.6, 12, 10]} />
+          <meshStandardMaterial color="#c8c2b4" roughness={0.7} />
+        </mesh>
+        <mesh position={[0, 12.4, 0]}>
+          <coneGeometry args={[2.8, 1.6, 8]} />
+          <meshStandardMaterial color="#8a4030" />
+        </mesh>
+        <mesh position={[8, 2.2, 6]}>
+          <boxGeometry args={[7, 4.4, 5]} />
+          <meshStandardMaterial color="#9a7a52" />
+        </mesh>
+        <mesh position={[8, 4.7, 6]} rotation={[0, Math.PI / 4, 0]}>
+          <coneGeometry args={[5.2, 1.8, 4]} />
+          <meshStandardMaterial color="#6a3a28" />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (layout.theme === "ridge") {
+    return (
+      <group position={[wp.x, 0, wp.z]}>
+        {[
+          [8, 2.2, 4, 3.4],
+          [-12, 1.6, -6, 2.6],
+          [18, 1.1, -10, 2.1],
+        ].map(([x, h, z, s]) => (
+          <mesh key={`${x}-${z}`} position={[x, h * 0.5, z]}>
+            <dodecahedronGeometry args={[s, 0]} />
+            <meshStandardMaterial color="#6e675c" roughness={0.92} />
+          </mesh>
+        ))}
       </group>
     );
   }

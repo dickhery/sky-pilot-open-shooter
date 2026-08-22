@@ -67,6 +67,9 @@ export function MissionBriefing({
               <span className="font-medium">{extractName}</span> — or hit the
               next outpost for a score multiplier.
             </li>
+            <li>
+              Hostile jets patrol the theater. Shoot them down for extra points.
+            </li>
             <li>Hold brake / E in the green LZ to finish.</li>
           </ol>
         </div>

@@ -26,6 +26,7 @@ export function CombatField({
         />
       ))}
       <TargetMeshes flightState={flightState} />
+      <EnemyAircraftMeshes flightState={flightState} />
       <ProjectileMeshes flightState={flightState} />
       <BlastMeshes flightState={flightState} />
       <mesh
@@ -279,6 +280,92 @@ function HardTarget({ target }: { target: CombatTarget }) {
         </group>
       );
   }
+}
+
+function EnemyAircraftMeshes({
+  flightState,
+}: {
+  flightState: React.MutableRefObject<FlightState>;
+}) {
+  return (
+    <group>
+      {flightState.current.enemies.map((enemy) => (
+        <EnemyCraft
+          key={enemy.id}
+          enemyId={enemy.id}
+          flightState={flightState}
+        />
+      ))}
+    </group>
+  );
+}
+
+function EnemyCraft({
+  enemyId,
+  flightState,
+}: {
+  enemyId: string;
+  flightState: React.MutableRefObject<FlightState>;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(() => {
+    const enemy = flightState.current.enemies.find((e) => e.id === enemyId);
+    if (!ref.current || !enemy) return;
+    const show = enemy.alive || enemy.position.y > 2;
+    ref.current.visible = show;
+    if (!show) return;
+    ref.current.position.copy(enemy.position);
+    ref.current.rotation.set(enemy.pitch, enemy.yaw, enemy.bank, "YXZ");
+  });
+  return (
+    <group ref={ref}>
+      <EnemyJetMesh />
+    </group>
+  );
+}
+
+/** Compact hostile interceptor — no cockpit, no lights. */
+function EnemyJetMesh() {
+  return (
+    <group>
+      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <capsuleGeometry args={[0.32, 3.4, 3, 8]} />
+        <meshStandardMaterial
+          color="#6a2218"
+          metalness={0.42}
+          roughness={0.4}
+        />
+      </mesh>
+      <mesh position={[0, 0.02, 0.15]} castShadow>
+        <boxGeometry args={[6.8, 0.07, 1.25]} />
+        <meshStandardMaterial color="#3e1612" metalness={0.3} roughness={0.5} />
+      </mesh>
+      <mesh position={[0, 0.48, 1.35]} castShadow>
+        <boxGeometry args={[0.08, 1.05, 0.85]} />
+        <meshStandardMaterial color="#8a2e1c" />
+      </mesh>
+      <mesh position={[0, 0.18, 1.55]}>
+        <boxGeometry args={[1.8, 0.06, 0.55]} />
+        <meshStandardMaterial color="#3e1612" />
+      </mesh>
+      <mesh position={[0, 0.18, -0.55]}>
+        <sphereGeometry args={[0.28, 8, 8]} />
+        <meshStandardMaterial
+          color="#1a2830"
+          metalness={0.75}
+          roughness={0.12}
+        />
+      </mesh>
+      <mesh position={[0, 0.02, 2.15]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.12, 0.7, 6]} />
+        <meshBasicMaterial color="#ff7040" transparent opacity={0.55} />
+      </mesh>
+      <mesh position={[0, 0.55, 0]}>
+        <boxGeometry args={[0.12, 0.04, 2.4]} />
+        <meshStandardMaterial color="#c45a22" />
+      </mesh>
+    </group>
+  );
 }
 
 function ProjectileMeshes({

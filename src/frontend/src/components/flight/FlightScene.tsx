@@ -5,6 +5,7 @@ import {
   AirportBuildings,
   DestinationAirport,
   DistantMountains,
+  GroundDressing,
   MapLandmarks,
   Terrain,
   TreeField,
@@ -86,6 +87,7 @@ export function FlightScene({
       <Terrain layout={layout} />
       <WaterBody theme={layout.theme} />
       <TreeField layout={layout} />
+      <GroundDressing layout={layout} />
       <DistantMountains theme={layout.theme} />
       <MapLandmarks layout={layout} night={weather === "Nighttime"} />
       <AirportBuildings layout={layout} night={weather === "Nighttime"} />

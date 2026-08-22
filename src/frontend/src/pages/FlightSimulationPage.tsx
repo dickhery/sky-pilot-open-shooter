@@ -145,6 +145,8 @@ export function FlightSimulationPage() {
     sectorTotal: 1,
     targetsLeft: 0,
     multiplier: 1,
+    airKills: 0,
+    airTotal: 3,
   });
 
   // Phase change handler passed into the scene.
@@ -177,6 +179,8 @@ export function FlightSimulationPage() {
         sectorTotal: layout.sectors.length,
         targetsLeft: sector?.left ?? 0,
         multiplier: 1 + Math.max(0, s.sectorsCleared - 1) * 0.25,
+        airKills: s.airKills,
+        airTotal: s.enemies.length,
       });
 
       if (s.phase === "crashed" || s.phase === "complete") {
@@ -348,6 +352,8 @@ export function FlightSimulationPage() {
         sectorsCleared={combatHud.sectorsCleared}
         sectorTotal={combatHud.sectorTotal}
         targetsLeft={combatHud.targetsLeft}
+        airKills={combatHud.airKills}
+        airTotal={combatHud.airTotal}
         multiplier={combatHud.multiplier}
         vehicleClass={selectedPlane.class}
       />
@@ -380,6 +386,7 @@ export function FlightSimulationPage() {
           score={score}
           plan={selectedPlan}
           plane={selectedPlane}
+          airKills={flightState.current.airKills}
           durationSec={finalDuration}
           persisted={persisted}
           crashed={phase === "crashed"}
@@ -432,7 +439,7 @@ function getMissionBrief(
               ? "Hovercraft — drive in, F to fire, E to hop out"
               : canDismount
                 ? "Shift climbs. W flies forward. Land + E to go on foot."
-                : "Strafe the amber ring, or land at the FOB and E onto the hovercraft.",
+                : "Strafe the amber ring. Hostile jets will hunt you — shoot them down for extra points.",
       };
     case "landing":
       return {

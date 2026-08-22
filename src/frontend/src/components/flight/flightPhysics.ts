@@ -40,8 +40,11 @@ export const INTERACT_RANGE = 10;
 const G = 9.81;
 /** m/s² on air-launched rounds so a level shot still falls onto dirt. */
 const SHOT_GRAVITY = 64;
+const ENEMY_HIT_RADIUS = 6.4;
 const _forward = new THREE.Vector3();
 const _muzzleDir = new THREE.Vector3();
+const _aim = new THREE.Vector3();
+const _eFwd = new THREE.Vector3();
 let nextShotId = 1;
 
 export type LandingHint =
@@ -93,6 +96,23 @@ export interface Blast {
   radius: number;
 }
 
+export interface EnemyAircraft {
+  id: string;
+  position: THREE.Vector3;
+  yaw: number;
+  pitch: number;
+  bank: number;
+  speed: number;
+  hp: number;
+  maxHp: number;
+  fireCooldown: number;
+  alive: boolean;
+  home: THREE.Vector3;
+  orbitRadius: number;
+  orbitPhase: number;
+  cruiseAlt: number;
+}
+
 export interface ControlInput {
   pitch: number;
   roll: number;
@@ -139,6 +159,8 @@ export interface FlightState {
   playerHealth: number;
   shotsFired: number;
   shotsHit: number;
+  airKills: number;
+  enemies: EnemyAircraft[];
   sectorsCleared: number;
   fireCooldown: number;
   extractHold: number;
@@ -191,10 +213,49 @@ export function createInitialFlightState(layout: SceneLayout): FlightState {
     playerHealth: PLAYER_MAX_HP,
     shotsFired: 0,
     shotsHit: 0,
+    airKills: 0,
+    enemies: spawnEnemies(layout),
     sectorsCleared: 0,
     fireCooldown: 0,
     extractHold: 0,
   };
+}
+
+function spawnEnemies(layout: SceneLayout): EnemyAircraft[] {
+  const home = new THREE.Vector3();
+  for (const sector of layout.sectors) {
+    home.add(sector.center);
+  }
+  if (layout.sectors.length > 0) {
+    home.multiplyScalar(1 / layout.sectors.length);
+  }
+  home.y = 0;
+  const count = 3;
+  const out: EnemyAircraft[] = [];
+  for (let i = 0; i < count; i++) {
+    const phase = (i / count) * Math.PI * 2;
+    const radius = 250 + i * 85;
+    const alt = 52 + i * 26;
+    const x = home.x + Math.cos(phase) * radius;
+    const z = home.z + Math.sin(phase) * radius;
+    out.push({
+      id: `bandit-${layout.planId}-${i}`,
+      position: new THREE.Vector3(x, alt, z),
+      yaw: phase + Math.PI * 0.5,
+      pitch: 0,
+      bank: 0,
+      speed: 48 + i * 5,
+      hp: 50,
+      maxHp: 50,
+      fireCooldown: 0.8 + i * 0.45,
+      alive: true,
+      home: home.clone(),
+      orbitRadius: radius,
+      orbitPhase: phase,
+      cruiseAlt: alt,
+    });
+  }
+  return out;
 }
 
 export function routeLength(layout: SceneLayout): number {
@@ -540,8 +601,34 @@ function detonate(
       target.destroyed = true;
     }
   }
+  const airR = Math.min(9, Math.max(6.2, shot.blastRadius * 0.32));
+  for (const enemy of state.enemies) {
+    if (!enemy.alive) continue;
+    if (enemy.position.distanceTo(at) > airR) continue;
+    scored = true;
+    damageEnemy(state, enemy, shot.damage);
+  }
   if (scored) {
     state.shotsHit += 1;
+  }
+}
+
+function killEnemy(state: FlightState, enemy: EnemyAircraft): void {
+  if (!enemy.alive) return;
+  enemy.hp = 0;
+  enemy.alive = false;
+  state.airKills += 1;
+}
+
+function damageEnemy(
+  state: FlightState,
+  enemy: EnemyAircraft,
+  damage: number,
+): void {
+  if (!enemy.alive) return;
+  enemy.hp -= damage;
+  if (enemy.hp <= 0) {
+    killEnemy(state, enemy);
   }
 }
 
@@ -556,12 +643,21 @@ function stepProjectiles(state: FlightState, dt: number): void {
     if (shot.life <= 0) continue;
 
     if (shot.owner === "player") {
+      let hit = false;
+      for (const enemy of state.enemies) {
+        if (!enemy.alive) continue;
+        if (shot.position.distanceTo(enemy.position) < ENEMY_HIT_RADIUS) {
+          detonate(state, shot.position, shot);
+          hit = true;
+          break;
+        }
+      }
+      if (hit) continue;
       if (shot.position.y <= 0.12) {
         shot.position.y = 0.12;
         detonate(state, shot.position, shot);
         continue;
       }
-      let hit = false;
       for (const target of state.targets) {
         if (target.destroyed) continue;
         if (shot.position.distanceTo(target.position) < 7) {
@@ -617,6 +713,112 @@ function stepTurrets(state: FlightState, dt: number): void {
     });
     target.fireCooldown = 1.55 + Math.random() * 0.5;
   }
+}
+
+function stepEnemies(state: FlightState, dt: number): void {
+  if (state.finished) {
+    for (const enemy of state.enemies) {
+      if (!enemy.alive) sinkDeadEnemy(enemy, dt);
+    }
+    return;
+  }
+  const playerAir =
+    state.vehicleMode === "air" || state.position.y > GROUND_CONTACT_Y + 8;
+  for (const enemy of state.enemies) {
+    if (!enemy.alive) {
+      sinkDeadEnemy(enemy, dt);
+      continue;
+    }
+    enemy.fireCooldown = Math.max(0, enemy.fireCooldown - dt);
+    const dx = state.position.x - enemy.position.x;
+    const dz = state.position.z - enemy.position.z;
+    const dist = Math.hypot(dx, dz);
+    const engage = playerAir && dist < 400 && !state.finished;
+
+    let wantYaw = enemy.yaw;
+    let wantAlt = enemy.cruiseAlt;
+    let wantSpeed = 46;
+    if (engage) {
+      wantYaw = Math.atan2(-dx, -dz);
+      wantAlt = THREE.MathUtils.clamp(state.position.y + 10, 36, 150);
+      wantSpeed = dist < 90 ? 38 : 62;
+      _eFwd.set(-Math.sin(enemy.yaw), 0, -Math.cos(enemy.yaw));
+      const facing = dist > 1 ? (_eFwd.x * dx + _eFwd.z * dz) / dist : 0;
+      if (
+        dist < 210 &&
+        facing > 0.62 &&
+        enemy.fireCooldown <= 0 &&
+        Math.abs(state.position.y - enemy.position.y) < 48
+      ) {
+        fireEnemyAtPlayer(state, enemy, dist);
+        enemy.fireCooldown = 1.7 + Math.random() * 0.7;
+      }
+    } else {
+      enemy.orbitPhase += (enemy.speed / Math.max(80, enemy.orbitRadius)) * dt;
+      const ox = enemy.home.x + Math.cos(enemy.orbitPhase) * enemy.orbitRadius;
+      const oz = enemy.home.z + Math.sin(enemy.orbitPhase) * enemy.orbitRadius;
+      wantYaw = Math.atan2(-(ox - enemy.position.x), -(oz - enemy.position.z));
+      wantAlt = enemy.cruiseAlt + Math.sin(enemy.orbitPhase * 2) * 7;
+      wantSpeed = enemy.speed;
+    }
+
+    let yawErr = wantYaw - enemy.yaw;
+    while (yawErr > Math.PI) yawErr -= Math.PI * 2;
+    while (yawErr < -Math.PI) yawErr += Math.PI * 2;
+    const turn = THREE.MathUtils.clamp(yawErr, -1.6 * dt, 1.6 * dt);
+    enemy.yaw += turn;
+    enemy.bank +=
+      (THREE.MathUtils.clamp(-yawErr, -0.55, 0.55) - enemy.bank) *
+      Math.min(1, dt * 3.2);
+    const dy = wantAlt - enemy.position.y;
+    enemy.pitch +=
+      (THREE.MathUtils.clamp(dy * 0.012, -0.28, 0.28) - enemy.pitch) *
+      Math.min(1, dt * 2.4);
+    enemy.position.y += dy * Math.min(1, dt * 0.85);
+    enemy.position.y = Math.max(28, enemy.position.y);
+    const spd = THREE.MathUtils.lerp(
+      enemy.speed,
+      wantSpeed,
+      Math.min(1, dt * 1.4),
+    );
+    _eFwd.set(
+      -Math.sin(enemy.yaw) * Math.cos(enemy.pitch),
+      Math.sin(enemy.pitch),
+      -Math.cos(enemy.yaw) * Math.cos(enemy.pitch),
+    );
+    enemy.position.addScaledVector(_eFwd, spd * dt);
+  }
+}
+
+function sinkDeadEnemy(enemy: EnemyAircraft, dt: number): void {
+  if (enemy.position.y < -4) return;
+  enemy.position.y -= 32 * dt;
+  enemy.pitch += 0.55 * dt;
+  enemy.bank += 0.35 * dt;
+}
+
+function fireEnemyAtPlayer(
+  state: FlightState,
+  enemy: EnemyAircraft,
+  dist: number,
+): void {
+  _aim.copy(state.position);
+  const lead = Math.min(0.55, dist / 220);
+  _aim.x += _forward.x * state.speed * lead * 0.25;
+  _aim.z += _forward.z * state.speed * lead * 0.25;
+  _aim.sub(enemy.position);
+  if (_aim.lengthSq() < 4) return;
+  _aim.normalize();
+  state.projectiles.push({
+    id: nextShotId++,
+    position: enemy.position.clone().addScaledVector(_aim, 4.2),
+    velocity: _aim.multiplyScalar(118),
+    owner: "enemy",
+    life: 2.1,
+    damage: 7,
+    gravity: false,
+    blastRadius: 0,
+  });
 }
 
 function tryExtract(
@@ -1024,6 +1226,7 @@ export function stepFlight(
     firePlayer(state, plane);
   }
   stepTurrets(state, step);
+  stepEnemies(state, step);
   stepProjectiles(state, step);
   if (state.finished) return;
 
@@ -1078,13 +1281,15 @@ export function computeScore(
   );
 
   const multiplier = 1 + Math.max(0, state.sectorsCleared - 1) * 0.25;
+  const killBonus = Math.min(16, state.airKills * 6);
   const total = Math.round(
     Math.max(
       0,
       Math.min(
         100,
         (speed * 0.4 + landingSmoothness * 0.3 + runwayAlignment * 0.3) *
-          multiplier,
+          multiplier +
+          killBonus,
       ),
     ),
   );

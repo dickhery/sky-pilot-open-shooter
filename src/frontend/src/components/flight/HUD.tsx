@@ -50,6 +50,8 @@ interface HUDProps {
   targetsLeft: number;
   multiplier: number;
   vehicleClass: VehicleClass;
+  airKills: number;
+  airTotal: number;
 }
 
 const MISSION_STEPS = [
@@ -93,6 +95,8 @@ export function HUD({
   targetsLeft,
   multiplier,
   vehicleClass,
+  airKills,
+  airTotal,
 }: HUDProps) {
   const phaseLabel: Record<FlightPhase, string> = {
     idle: "Standby",
@@ -335,6 +339,9 @@ export function HUD({
           </div>
           <p className="hud-label mt-1.5 text-[9px] text-muted-foreground">
             Sectors {sectorsCleared}/{sectorTotal} · {targetsLeft} left
+          </p>
+          <p className="hud-label mt-0.5 text-[9px] text-accent">
+            Bandits {airKills}/{airTotal}
           </p>
         </div>
       </div>

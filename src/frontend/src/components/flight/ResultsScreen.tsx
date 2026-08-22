@@ -31,6 +31,7 @@ interface ResultsScreenProps {
   score: ScoreBreakdown;
   plan: FlightPlan | null;
   plane: Plane | null;
+  airKills?: number;
   durationSec: number;
   persisted: boolean;
   crashed?: boolean;
@@ -50,6 +51,7 @@ export function ResultsScreen({
   score,
   plan,
   plane,
+  airKills = 0,
   durationSec,
   persisted,
   crashed = false,
@@ -147,6 +149,12 @@ export function ResultsScreen({
               description="LZ quality and sector multiplier"
               dataOcid="flight.results.alignment"
             />
+            {airKills > 0 && (
+              <p className="hud-label text-center text-[11px] text-accent">
+                {airKills} bandit{airKills === 1 ? "" : "s"} down — bonus
+                applied to total
+              </p>
+            )}
           </div>
         )}
 
