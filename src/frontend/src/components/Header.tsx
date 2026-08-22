@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useInternetIdentity } from "@caffeineai/core-infrastructure";
+import { useInternetIdentity } from "@/icp-auth";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { LogIn, LogOut, Plane, Rocket } from "lucide-react";
 

@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSubmitLeaderboardScore } from "@/hooks/useFlightData";
+import { useInternetIdentity } from "@/icp-auth";
 import type { Plane, ScoreBreakdown } from "@/types/game";
-import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {

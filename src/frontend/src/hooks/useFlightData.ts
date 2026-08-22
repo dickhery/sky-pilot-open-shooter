@@ -1,4 +1,3 @@
-import { createActor } from "@/backend";
 import type {
   FlightLogView,
   FlightPlan,
@@ -9,7 +8,7 @@ import type {
   SubmitOutcome,
   Weather,
 } from "@/backend";
-import { useActor, useInternetIdentity } from "@caffeineai/core-infrastructure";
+import { useActor, useInternetIdentity } from "@/icp-auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 /**
@@ -20,7 +19,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
  * plane / weather / routeDescription).
  */
 export function useFlightPlans() {
-  const { actor, isFetching } = useActor(createActor);
+  const { actor, isFetching } = useActor();
   return useQuery<FlightPlan[]>({
     queryKey: ["flight-plans"],
     queryFn: async () => {
@@ -36,7 +35,7 @@ export function useFlightPlans() {
  * Fetch the pilot's saved flight logs (logbook screen).
  */
 export function useFlightLogs() {
-  const { actor, isFetching } = useActor(createActor);
+  const { actor, isFetching } = useActor();
   const { isAuthenticated } = useInternetIdentity();
   return useQuery<FlightLogView[]>({
     queryKey: ["flight-logs"],
@@ -53,7 +52,7 @@ export function useFlightLogs() {
  * Fetch a single flight log by id (log detail screen).
  */
 export function useFlightLog(logId: LogId | undefined) {
-  const { actor, isFetching } = useActor(createActor);
+  const { actor, isFetching } = useActor();
   const { isAuthenticated } = useInternetIdentity();
   return useQuery<FlightLogView | null>({
     queryKey: ["flight-log", logId?.toString()],
@@ -82,7 +81,7 @@ export interface RecordFlightLogInput {
 }
 
 export function useRecordFlightLog() {
-  const { actor } = useActor(createActor);
+  const { actor } = useActor();
   return useMutation<FlightLogView, Error, RecordFlightLogInput>({
     mutationFn: async (input) => {
       if (!actor) throw new Error("Backend actor not ready");
@@ -101,7 +100,7 @@ export function useRecordFlightLog() {
  * Public top scores. Query-only — no authentication, one cheap read.
  */
 export function useLeaderboard() {
-  const { actor, isFetching } = useActor(createActor);
+  const { actor, isFetching } = useActor();
   return useQuery<LeaderboardEntryView[]>({
     queryKey: ["leaderboard"],
     queryFn: async () => {
@@ -122,7 +121,7 @@ export interface SubmitLeaderboardInput {
 }
 
 export function useSubmitLeaderboardScore() {
-  const { actor } = useActor(createActor);
+  const { actor } = useActor();
   return useMutation<SubmitOutcome, Error, SubmitLeaderboardInput>({
     mutationFn: async (input) => {
       if (!actor) throw new Error("Backend actor not ready");

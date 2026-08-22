@@ -23,6 +23,12 @@
 
 - **generate bindings**: `pnpm bindgen` This step is necessary to ensure the frontend can call the backend methods.
 
+**Internet Computer deploy** (run from root):
+
+- **build**: `icp build`
+- **deploy local**: `icp network start -d` then `icp deploy`
+- **deploy mainnet**: `icp deploy -e ic --no-create`
+
 ## Learnings
 
 [No learnings yet]

@@ -22,7 +22,6 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "node"],
     "paths": {
-      "declarations/*": ["../declarations/*"],
       "@/*": ["./src/*"]
     }
   },

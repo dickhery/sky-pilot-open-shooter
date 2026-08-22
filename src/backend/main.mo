@@ -1,5 +1,4 @@
 import List "mo:core/List";
-import MixinViews "mo:caffeineai-data-viewer/MixinViews";
 import AccessControl "mo:caffeineai-authorization/access-control";
 import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
 import FlightLogsTypes "types/flight-logs";
@@ -9,8 +8,6 @@ import FlightPlansApi "mixins/flight-plans-api";
 import LeaderboardApi "mixins/leaderboard-api";
 
 actor {
-  include MixinViews();
-
   // Stable state — types only, no initializers. Values come from the
   // migration chain in src/backend/migrations/.
   let accessControlState : AccessControl.AccessControlState;
@@ -24,8 +21,8 @@ actor {
   include FlightPlansApi();
   include LeaderboardApi(leaderboard, nextLeaderboardId);
 
-  /// Reject anonymous writers before Candid decode. Not a security
-  /// boundary — methods still check the caller. II start/finish stay open.
+  // Reject anonymous writers before Candid decode. Not a security
+  // boundary — methods still check the caller. II start/finish stay open.
   system func inspect(
     {
       caller : Principal;
@@ -57,11 +54,6 @@ actor {
         #listLeaderboard : () -> ();
         #getCallerUserRole : () -> ();
         #isCallerAdmin : () -> ();
-        #__accessControlState : () -> ();
-        #__flightLogs : () -> (?Nat, ?Nat);
-        #__leaderboard : () -> (?Nat, ?Nat);
-        #__nextLogId : () -> ();
-        #__nextLeaderboardId : () -> ();
       };
     }
   ) : Bool {

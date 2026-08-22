@@ -24,6 +24,7 @@ import {
 } from "@/hooks/useFlightAudio";
 import { useFlightControls } from "@/hooks/useFlightControls";
 import { useRecordFlightLog } from "@/hooks/useFlightData";
+import { useInternetIdentity } from "@/icp-auth";
 import { FALLBACK_JET } from "@/lib/aircraft";
 import { useGameStore } from "@/store/gameStore";
 import type {
@@ -32,7 +33,6 @@ import type {
   VehicleMode,
   Weather,
 } from "@/types/game";
-import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useNavigate } from "@tanstack/react-router";
 import { Plane as PlaneIcon, Rocket } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

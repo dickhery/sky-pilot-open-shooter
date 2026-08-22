@@ -1,9 +1,8 @@
 {
   "version": 3,
-  "mopsTomlDepsHash": "84f48b7a3aa9c45036d24273225d0ce1b47c4fad163a5ae2c82e0010598a156b",
+  "mopsTomlDepsHash": "15a8aa8061f24ef7193e6e82eef7e4d0af32712f96254dc9e65e442c5c224cb6",
   "deps": {
     "core": "2.6.0",
-    "caffeineai-data-viewer": "0.1.0",
     "caffeineai-authorization": "1.0.0",
     "identity-attributes": "0.4.0",
     "caffeineai-lints": "0.1.0"
@@ -67,12 +66,6 @@
       "core@2.6.0/src/pure/Queue.mo": "2beb6586927cda381166adb7568a8b61cbe461e6dd9b2007d7e2c27448362bcc",
       "core@2.6.0/src/pure/RealTimeQueue.mo": "60e1f118e1fd728c64ac769396b2441a3e9be5208051139b3dd652125a81a0cb",
       "core@2.6.0/src/pure/Set.mo": "c8f6f193a4b42b2df65ce8c05d610ccbcdc8befddc72acd44445e7290224373e"
-    },
-    "caffeineai-data-viewer@0.1.0": {
-      "caffeineai-data-viewer@0.1.0/README.md": "1f1ffe155b4644b5ae26121d4538699a6a2a6199587efffd5a1cc84aa36c3754",
-      "caffeineai-data-viewer@0.1.0/rules/include-mixin-views.toml": "2d6ea29fa90ac073e1d3fe7d765de569649c5eea48e332b659b66a195d0c7161",
-      "caffeineai-data-viewer@0.1.0/mops.toml": "e8434120c1eb86ba07303d9c72166d22ebc6fe105f36fdde096e21563e7b7edb",
-      "caffeineai-data-viewer@0.1.0/src/MixinViews.mo": "dd49c1e8525fe4b2ba5b4f55d6c83b7ee250510607d4b8b1c27e0e0d14d03234"
     },
     "caffeineai-authorization@1.0.0": {
       "caffeineai-authorization@1.0.0/rules/no-redeclare-assign-caller-user-role.toml": "e8669dfe4931aaa4268682877388255342ce2cb2cdafd21a121ddf22ef42b500",

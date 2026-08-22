@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/dfinity/icp-cli/main/docs/schemas/icp-yaml-schema.json
+canisters:
+  - name: backend
+    recipe:
+      type: "@dfinity/motoko@v5.1.0"
+      configuration:
+        shrink: true
+        compress: true
+    settings:
+      log_visibility: controllers
+
+  - name: frontend
+    recipe:
+      type: "@dfinity/static-site@v0.3.3"
+      configuration:
+        dir: src/frontend/dist
+        build:
+          - pnpm install --prefer-offline
+          - pnpm --dir src/frontend bindgen
+          - pnpm --dir src/frontend build
+    settings:
+      log_visibility: controllers

@@ -64,17 +64,6 @@ type LeaderboardEntryView =
    total: nat;
    weather: Weather;
  };
-type LeaderboardEntry = 
- record {
-   displayName: text;
-   id: EntryId;
-   planName: text;
-   plane: Plane;
-   playerId: principal;
-   submittedAt: int;
-   total: nat;
-   weather: Weather;
- };
 type FlightPlan = 
  record {
    departure: Runway;
@@ -87,16 +76,6 @@ type FlightPlan =
    weather: Weather;
  };
 type FlightLogView = 
- record {
-   completedAt: int;
-   id: LogId;
-   planName: text;
-   plane: Plane;
-   playerId: PlayerId;
-   score: ScoreBreakdown;
-   weather: Weather;
- };
-type FlightLog = 
  record {
    completedAt: int;
    id: LogId;
@@ -130,12 +109,6 @@ type Error =
  };
 type EntryId = nat;
 service : {
-  __accessControlState: () -> (reserved) query;
-  __flightLogs: (io: opt nat, count: opt nat) -> (vec FlightLog) query;
-  __leaderboard: (io: opt nat, count: opt nat) ->
-   (vec LeaderboardEntry) query;
-  __nextLeaderboardId: () -> (reserved) query;
-  __nextLogId: () -> (reserved) query;
   _initialize_access_control: () -> ();
   _internet_identity_sign_in_finish: () -> (Result);
   _internet_identity_sign_in_start: () -> (blob);
