@@ -47,6 +47,9 @@ export interface FlightSceneProps {
   cockpitView: boolean;
   /** Freeze physics while the briefing overlay is up. */
   paused?: boolean;
+  /** Paid country flags currently locked in for this theater. */
+  playerFlag?: string;
+  enemyFlag?: string;
 }
 
 /**
@@ -63,6 +66,8 @@ export function FlightScene({
   onPhaseChange,
   cockpitView,
   paused = false,
+  playerFlag = "us",
+  enemyFlag = "ru",
 }: FlightSceneProps) {
   return (
     <Canvas
@@ -90,8 +95,16 @@ export function FlightScene({
       <GroundDressing layout={layout} />
       <DistantMountains theme={layout.theme} />
       <MapLandmarks layout={layout} night={weather === "Nighttime"} />
-      <AirportBuildings layout={layout} night={weather === "Nighttime"} />
-      <DestinationAirport layout={layout} night={weather === "Nighttime"} />
+      <AirportBuildings
+        layout={layout}
+        night={weather === "Nighttime"}
+        playerFlag={playerFlag}
+      />
+      <DestinationAirport
+        layout={layout}
+        night={weather === "Nighttime"}
+        playerFlag={playerFlag}
+      />
       <Runway
         start={layout.departureStart}
         end={layout.departureEnd}
@@ -103,7 +116,11 @@ export function FlightScene({
         weather={weather}
         isLanding
       />
-      <CombatField layout={layout} flightState={flightState} />
+      <CombatField
+        layout={layout}
+        flightState={flightState}
+        enemyFlag={enemyFlag}
+      />
       <ExtractMarker layout={layout} flightState={flightState} />
       <FlightRig
         plane={plane}
@@ -113,6 +130,7 @@ export function FlightScene({
         onPhaseChange={onPhaseChange}
         cockpitView={cockpitView}
         paused={paused}
+        playerFlag={playerFlag}
       />
     </Canvas>
   );
@@ -342,6 +360,7 @@ function FlightRig({
   onPhaseChange,
   cockpitView,
   paused,
+  playerFlag,
 }: {
   plane: PlaneType;
   layout: SceneLayout;
@@ -350,6 +369,7 @@ function FlightRig({
   onPhaseChange: (phase: FlightPhase) => void;
   cockpitView: boolean;
   paused: boolean;
+  playerFlag: string;
 }) {
   const planeRef = useRef<THREE.Group>(null);
   const shadowRef = useRef<THREE.Mesh>(null);
@@ -444,12 +464,14 @@ function FlightRig({
           axes={controlsAxes}
           flightState={flightState}
           cockpitView={cockpitView}
+          playerFlag={playerFlag}
         />
       </group>
       <ParkedVehicles
         plane={plane}
         flightState={flightState}
         axes={controlsAxes}
+        playerFlag={playerFlag}
       />
       <mesh ref={shadowRef} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[1, 20]} />
@@ -469,11 +491,13 @@ function ActiveVehicle({
   axes,
   flightState,
   cockpitView,
+  playerFlag,
 }: {
   plane: PlaneType;
   axes: FlightSceneProps["controlsAxes"];
   flightState: React.MutableRefObject<FlightState>;
   cockpitView: boolean;
+  playerFlag: string;
 }) {
   const air = useRef<THREE.Group>(null);
   const hover = useRef<THREE.Group>(null);
@@ -492,6 +516,7 @@ function ActiveVehicle({
           axes={axes}
           flightState={flightState}
           cockpitView={cockpitView}
+          playerFlag={playerFlag}
         />
       </group>
       <group ref={hover} visible={false}>
@@ -508,10 +533,12 @@ function ParkedVehicles({
   plane,
   flightState,
   axes,
+  playerFlag,
 }: {
   plane: PlaneType;
   flightState: React.MutableRefObject<FlightState>;
   axes: FlightSceneProps["controlsAxes"];
+  playerFlag: string;
 }) {
   const airRef = useRef<THREE.Group>(null);
   const hoverRef = useRef<THREE.Group>(null);
@@ -544,6 +571,7 @@ function ParkedVehicles({
           axes={axes}
           flightState={flightState}
           cockpitView={false}
+          playerFlag={playerFlag}
         />
         {flightState.current.airParked && (
           <ParkedMarker

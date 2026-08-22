@@ -1,3 +1,4 @@
+import { FlagDecal, FlagPole } from "@/components/flight/FlagGraphics";
 import type {
   CombatTarget,
   FlightState,
@@ -11,9 +12,11 @@ import * as THREE from "three";
 export function CombatField({
   layout,
   flightState,
+  enemyFlag = "ru",
 }: {
   layout: SceneLayout;
   flightState: React.MutableRefObject<FlightState>;
+  enemyFlag?: string;
 }) {
   return (
     <group>
@@ -23,10 +26,11 @@ export function CombatField({
           layout={layout}
           sectorIndex={i}
           flightState={flightState}
+          enemyFlag={enemyFlag}
         />
       ))}
       <TargetMeshes flightState={flightState} />
-      <EnemyAircraftMeshes flightState={flightState} />
+      <EnemyAircraftMeshes flightState={flightState} enemyFlag={enemyFlag} />
       <ProjectileMeshes flightState={flightState} />
       <BlastMeshes flightState={flightState} />
       <mesh
@@ -51,10 +55,12 @@ function SectorMarker({
   layout,
   sectorIndex,
   flightState,
+  enemyFlag,
 }: {
   layout: SceneLayout;
   sectorIndex: number;
   flightState: React.MutableRefObject<FlightState>;
+  enemyFlag: string;
 }) {
   const ref = useRef<THREE.Group>(null);
   const sector = layout.sectors[sectorIndex];
@@ -97,6 +103,9 @@ function SectorMarker({
         <cylinderGeometry args={[0.28, 0.4, 44, 8]} />
         <meshBasicMaterial color="#ff8a20" transparent opacity={0.42} />
       </mesh>
+      <group position={[12, -0.2, 10]}>
+        <FlagPole code={enemyFlag} height={10} />
+      </group>
       <Html
         position={[0, 32, 0]}
         center
@@ -284,8 +293,10 @@ function HardTarget({ target }: { target: CombatTarget }) {
 
 function EnemyAircraftMeshes({
   flightState,
+  enemyFlag,
 }: {
   flightState: React.MutableRefObject<FlightState>;
+  enemyFlag: string;
 }) {
   return (
     <group>
@@ -294,6 +305,7 @@ function EnemyAircraftMeshes({
           key={enemy.id}
           enemyId={enemy.id}
           flightState={flightState}
+          enemyFlag={enemyFlag}
         />
       ))}
     </group>
@@ -303,9 +315,11 @@ function EnemyAircraftMeshes({
 function EnemyCraft({
   enemyId,
   flightState,
+  enemyFlag,
 }: {
   enemyId: string;
   flightState: React.MutableRefObject<FlightState>;
+  enemyFlag: string;
 }) {
   const ref = useRef<THREE.Group>(null);
   useFrame(() => {
@@ -319,13 +333,13 @@ function EnemyCraft({
   });
   return (
     <group ref={ref}>
-      <EnemyJetMesh />
+      <EnemyJetMesh enemyFlag={enemyFlag} />
     </group>
   );
 }
 
 /** Compact hostile interceptor — no cockpit, no lights. */
-function EnemyJetMesh() {
+function EnemyJetMesh({ enemyFlag }: { enemyFlag: string }) {
   return (
     <group>
       <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
@@ -340,6 +354,20 @@ function EnemyJetMesh() {
         <boxGeometry args={[6.8, 0.07, 1.25]} />
         <meshStandardMaterial color="#3e1612" metalness={0.3} roughness={0.5} />
       </mesh>
+      <FlagDecal
+        code={enemyFlag}
+        width={0.7}
+        height={0.4}
+        position={[1.85, 0.08, 0.05]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      />
+      <FlagDecal
+        code={enemyFlag}
+        width={0.7}
+        height={0.4}
+        position={[-1.85, 0.08, 0.05]}
+        rotation={[-Math.PI / 2, 0, Math.PI]}
+      />
       <mesh position={[0, 0.48, 1.35]} castShadow>
         <boxGeometry args={[0.08, 1.05, 0.85]} />
         <meshStandardMaterial color="#8a2e1c" />

@@ -1,3 +1,4 @@
+import { FlagPole } from "@/components/flight/FlagGraphics";
 import type { MapTheme, SceneLayout } from "@/components/flight/mapLayouts";
 import { airfieldClearance, apronBeside } from "@/components/flight/mapLayouts";
 import { MeshReflectorMaterial } from "@react-three/drei";
@@ -553,14 +554,19 @@ export function WaterBody({ theme }: { theme: MapTheme }) {
 export function AirportBuildings({
   layout,
   night = false,
+  playerFlag = "us",
 }: {
   layout: SceneLayout;
   night?: boolean;
+  playerFlag?: string;
 }) {
   const apron = apronBeside(layout.departureStart, layout.departureEnd, 48);
   return (
     <group position={[apron.x, 0, apron.z]} rotation={[0, apron.heading, 0]}>
       <ControlTower night={night} />
+      <group position={[5.2, 0, -6.5]}>
+        <FlagPole code={playerFlag} height={9.5} />
+      </group>
       <Hangar
         position={[-16, 0, 6]}
         width={16}
@@ -589,13 +595,18 @@ export function AirportBuildings({
 export function DestinationAirport({
   layout,
   night = false,
+  playerFlag = "us",
 }: {
   layout: SceneLayout;
   night?: boolean;
+  playerFlag?: string;
 }) {
   const apron = apronBeside(layout.landingThreshold, layout.landingEnd, 42);
   return (
     <group position={[apron.x, 0, apron.z]} rotation={[0, apron.heading, 0]}>
+      <group position={[-8, 0, -2]}>
+        <FlagPole code={playerFlag} height={8.5} />
+      </group>
       <Hangar
         position={[0, 0, 8]}
         width={12}

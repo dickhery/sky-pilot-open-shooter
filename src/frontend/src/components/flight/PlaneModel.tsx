@@ -1,4 +1,5 @@
 import { CockpitInterior } from "@/components/flight/CockpitInterior";
+import { FlagDecal } from "@/components/flight/FlagGraphics";
 import { HelicopterModel } from "@/components/flight/VehicleModels";
 import type { FlightState } from "@/components/flight/flightPhysics";
 import type { PlaneId } from "@/types/game";
@@ -17,6 +18,7 @@ interface PlaneModelProps {
   axes: React.MutableRefObject<ControlAxesLike>;
   flightState: React.MutableRefObject<FlightState>;
   cockpitView?: boolean;
+  playerFlag?: string;
 }
 
 interface Palette {
@@ -131,7 +133,7 @@ function makeFin(
  */
 export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
   function PlaneModel(
-    { planeId, axes, flightState, cockpitView = false },
+    { planeId, axes, flightState, cockpitView = false, playerFlag = "us" },
     ref,
   ) {
     const isJet = planeId === "StrikeJet";
@@ -215,7 +217,11 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
               axes={axes}
             />
           )}
-          <HelicopterModel axes={axes} cockpitView={cockpitView} />
+          <HelicopterModel
+            axes={axes}
+            cockpitView={cockpitView}
+            playerFlag={playerFlag}
+          />
         </group>
       );
     }
@@ -268,6 +274,24 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
                 roughness={0.5}
               />
             </mesh>
+            {!cockpitView && (
+              <>
+                <FlagDecal
+                  code={playerFlag}
+                  width={0.85}
+                  height={0.5}
+                  position={[2.15, 0.12, -0.15]}
+                  rotation={[-Math.PI / 2, 0, 0]}
+                />
+                <FlagDecal
+                  code={playerFlag}
+                  width={0.85}
+                  height={0.5}
+                  position={[-2.15, 0.12, -0.15]}
+                  rotation={[-Math.PI / 2, 0, Math.PI]}
+                />
+              </>
+            )}
             <mesh position={[isJet ? 4.05 : 2.55, 0.08, 0.05]}>
               <sphereGeometry args={[0.06, 8, 8]} />
               <meshBasicMaterial color="#ff3030" />

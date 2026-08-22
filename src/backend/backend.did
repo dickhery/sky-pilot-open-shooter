@@ -22,6 +22,12 @@ type SubmitOutcome =
    tooLow: record {needed: nat;};
    unchanged: LeaderboardEntryView;
  };
+type SlotStatus = 
+ variant {
+   holding;
+   live;
+   queued;
+ };
 type ScoreBreakdown = 
  record {
    landingSmoothness: nat;
@@ -38,6 +44,25 @@ type Result =
    err: Error;
    ok;
  };
+type QueueSlotView = 
+ record {
+   enemyFlag: FlagCode;
+   id: nat;
+   lockUntil: int;
+   playerFlag: FlagCode;
+   startAt: int;
+   status: SlotStatus;
+ };
+type PrepareView = 
+ record {
+   amountE8s: nat64;
+   destinationAccount: text;
+   feeE8s: nat64;
+   lockHours: nat;
+   memo: Memo;
+   queuePosition: nat;
+   startAt: int;
+ };
 type PlayerId = principal;
 type Plane__2 = 
  record {
@@ -52,6 +77,17 @@ type Plane =
    gulfstream;
  };
 type PlanId = nat;
+type PaymentInfoView = 
+ record {
+   amountE8s: nat64;
+   defaultEnemyFlag: FlagCode;
+   defaultPlayerFlag: FlagCode;
+   destinationAccount: text;
+   feeE8s: nat64;
+   lockHours: nat;
+   maxQueue: nat;
+ };
+type Memo = nat64;
 type LogId = nat;
 type LeaderboardEntryView = 
  record {
@@ -85,6 +121,7 @@ type FlightLogView =
    score: ScoreBreakdown;
    weather: Weather;
  };
+type FlagCode = text;
 type Error = 
  variant {
    AmbiguousAttribute: record {
@@ -108,20 +145,42 @@ type Error =
    UntrustedSsoSource: record {domain: text;};
  };
 type EntryId = nat;
+type ConfirmView = 
+ record {
+   enemyFlag: FlagCode;
+   id: nat;
+   lockUntil: int;
+   playerFlag: FlagCode;
+   queuePosition: nat;
+   startAt: int;
+ };
+type ActiveFlagsView = 
+ record {
+   enemyFlag: FlagCode;
+   holder: opt principal;
+   lockUntil: int;
+   playerFlag: FlagCode;
+   queued: nat;
+ };
 service : {
   _initialize_access_control: () -> ();
   _internet_identity_sign_in_finish: () -> (Result);
   _internet_identity_sign_in_start: () -> (blob);
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  confirmGameChange: (blockIndex: nat64) -> (ConfirmView);
+  getActiveGameFlags: () -> (ActiveFlagsView) query;
   getCallerUserRole: () -> (UserRole) query;
   getFlightLog: (logId: LogId) -> (opt FlightLogView) query;
   getFlightPlan: (planId: PlanId) -> (opt FlightPlan) query;
+  getGameChangePaymentInfo: () -> (PaymentInfoView) query;
   isCallerAdmin: () -> (bool) query;
   listFlightLogs: () -> (vec FlightLogView) query;
   listFlightPlans: () -> (vec FlightPlan) query;
+  listGameChangeQueue: () -> (vec QueueSlotView) query;
   listLeaderboard: () -> (vec LeaderboardEntryView) query;
   listPlanes: () -> (vec Plane__2) query;
   listWeather: () -> (vec Weather) query;
+  prepareGameChange: (playerFlag: text, enemyFlag: text) -> (PrepareView);
   recordFlightLog: (completedAt: int, planName: text, plane: Plane, weather:
    Weather, score: ScoreBreakdown) -> (FlightLogView);
   submitLeaderboardScore: (displayName: text, planName: text, plane: 

@@ -1,9 +1,14 @@
 import type {
+  ActiveFlagsView,
+  ConfirmView,
   FlightLogView,
   FlightPlan,
   LeaderboardEntryView,
   LogId,
+  PaymentInfoView,
   Plane,
+  PrepareView,
+  QueueSlotView,
   ScoreBreakdown,
   SubmitOutcome,
   Weather,
@@ -132,6 +137,72 @@ export function useSubmitLeaderboardScore() {
         input.weather,
         input.total,
       );
+    },
+  });
+}
+
+/**
+ * Current theater flags. Query-only — cheap, no authentication.
+ */
+export function useActiveGameFlags() {
+  const { actor, isFetching } = useActor();
+  return useQuery<ActiveFlagsView | null>({
+    queryKey: ["game-flags"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getActiveGameFlags();
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 30_000,
+  });
+}
+
+export function useGameChangePaymentInfo() {
+  const { actor, isFetching } = useActor();
+  return useQuery<PaymentInfoView | null>({
+    queryKey: ["game-change-payment"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getGameChangePaymentInfo();
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 300_000,
+  });
+}
+
+export function useGameChangeQueue() {
+  const { actor, isFetching } = useActor();
+  return useQuery<QueueSlotView[]>({
+    queryKey: ["game-change-queue"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.listGameChangeQueue();
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 15_000,
+  });
+}
+
+export function usePrepareGameChange() {
+  const { actor } = useActor();
+  return useMutation<
+    PrepareView,
+    Error,
+    { playerFlag: string; enemyFlag: string }
+  >({
+    mutationFn: async (input) => {
+      if (!actor) throw new Error("Backend actor not ready");
+      return actor.prepareGameChange(input.playerFlag, input.enemyFlag);
+    },
+  });
+}
+
+export function useConfirmGameChange() {
+  const { actor } = useActor();
+  return useMutation<ConfirmView, Error, bigint>({
+    mutationFn: async (blockIndex) => {
+      if (!actor) throw new Error("Backend actor not ready");
+      return actor.confirmGameChange(blockIndex);
     },
   });
 }

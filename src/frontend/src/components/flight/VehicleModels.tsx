@@ -1,3 +1,4 @@
+import { FlagDecal } from "@/components/flight/FlagGraphics";
 import type { FlightState } from "@/components/flight/flightPhysics";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
@@ -20,9 +21,11 @@ const GLASS = "#6a8894";
 export function HelicopterModel({
   axes,
   cockpitView = false,
+  playerFlag = "us",
 }: {
   axes: React.MutableRefObject<{ throttle: number }>;
   cockpitView?: boolean;
+  playerFlag?: string;
 }) {
   const mainRotor = useRef<THREE.Group>(null);
   const tailRotor = useRef<THREE.Group>(null);
@@ -88,6 +91,31 @@ export function HelicopterModel({
         <cylinderGeometry args={[0.06, 0.07, 0.9, 8]} />
         <meshStandardMaterial color="#1a1a1a" metalness={0.6} />
       </mesh>
+      {!cockpitView && (
+        <>
+          <FlagDecal
+            code={playerFlag}
+            width={0.7}
+            height={0.42}
+            position={[0.69, 0.28, 0.2]}
+            rotation={[0, Math.PI / 2, 0]}
+          />
+          <FlagDecal
+            code={playerFlag}
+            width={0.7}
+            height={0.42}
+            position={[-0.69, 0.28, 0.2]}
+            rotation={[0, -Math.PI / 2, 0]}
+          />
+          <FlagDecal
+            code={playerFlag}
+            width={0.55}
+            height={0.34}
+            position={[0.08, 0.7, 3.55]}
+            rotation={[0, Math.PI / 2, 0]}
+          />
+        </>
+      )}
       {/* Stub wings + pods */}
       <mesh position={[0, -0.05, 0.2]} visible={!cockpitView}>
         <boxGeometry args={[3.4, 0.1, 0.55]} />

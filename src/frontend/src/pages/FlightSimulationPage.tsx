@@ -25,9 +25,10 @@ import {
   writeMusicPref,
 } from "@/hooks/useFlightAudio";
 import { useFlightControls } from "@/hooks/useFlightControls";
-import { useRecordFlightLog } from "@/hooks/useFlightData";
+import { useActiveGameFlags, useRecordFlightLog } from "@/hooks/useFlightData";
 import { useInternetIdentity } from "@/icp-auth";
 import { FALLBACK_JET } from "@/lib/aircraft";
+import { DEFAULT_ENEMY_FLAG, DEFAULT_PLAYER_FLAG } from "@/lib/countries";
 import { useGameStore } from "@/store/gameStore";
 import type {
   FlightPhase,
@@ -138,6 +139,9 @@ export function FlightSimulationPage() {
 
   const recordMutation = useRecordFlightLog();
   const { isAuthenticated } = useInternetIdentity();
+  const flagsQuery = useActiveGameFlags();
+  const playerFlag = flagsQuery.data?.playerFlag ?? DEFAULT_PLAYER_FLAG;
+  const enemyFlag = flagsQuery.data?.enemyFlag ?? DEFAULT_ENEMY_FLAG;
   const [vehicleMode, setVehicleMode] = useState<VehicleMode>("air");
   const [combatHud, setCombatHud] = useState({
     health: 100,
@@ -328,6 +332,8 @@ export function FlightSimulationPage() {
         onPhaseChange={handlePhaseChange}
         cockpitView={cockpitView}
         paused={showBriefing}
+        playerFlag={playerFlag}
+        enemyFlag={enemyFlag}
       />
       <HUD
         altitude={telemetry.altitude}
@@ -356,6 +362,8 @@ export function FlightSimulationPage() {
         airTotal={combatHud.airTotal}
         multiplier={combatHud.multiplier}
         vehicleClass={selectedPlane.class}
+        playerFlag={playerFlag}
+        enemyFlag={enemyFlag}
       />
       {showBriefing && (
         <MissionBriefing

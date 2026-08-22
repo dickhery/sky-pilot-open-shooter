@@ -1,6 +1,7 @@
 import { MenuCard } from "@/components/MenuCard";
 import {
   ClipboardList,
+  Flag,
   GraduationCap,
   Plane,
   Radar,
@@ -44,6 +45,15 @@ const NAV_ITEMS = [
     to: "/leaderboard" as const,
     marker: "menu.leaderboard",
     accent: "accent" as const,
+  },
+  {
+    title: "Change the Game",
+    description:
+      "Pay 1.0 ICP to fly your flag on friendly craft and fields, and hang a rival flag on every hostile base.",
+    icon: Flag,
+    to: "/change-the-game" as const,
+    marker: "menu.change_the_game",
+    accent: "primary" as const,
   },
 ];
 

@@ -3,6 +3,7 @@ import {
   type LandingHint,
   ROTATE_SPEED_KTS,
 } from "@/components/flight/flightPhysics";
+import { flagEmoji } from "@/lib/countries";
 import type { FlightPhase, VehicleClass, VehicleMode } from "@/types/game";
 import {
   CheckCircle2,
@@ -52,6 +53,8 @@ interface HUDProps {
   vehicleClass: VehicleClass;
   airKills: number;
   airTotal: number;
+  playerFlag?: string;
+  enemyFlag?: string;
 }
 
 const MISSION_STEPS = [
@@ -97,6 +100,8 @@ export function HUD({
   vehicleClass,
   airKills,
   airTotal,
+  playerFlag,
+  enemyFlag,
 }: HUDProps) {
   const phaseLabel: Record<FlightPhase, string> = {
     idle: "Standby",
@@ -183,6 +188,12 @@ export function HUD({
           {subObjective && (
             <span className="hud-label text-[10px] text-muted-foreground">
               {subObjective}
+            </span>
+          )}
+          {playerFlag && enemyFlag && (
+            <span className="hud-label text-[10px] text-muted-foreground">
+              {flagEmoji(playerFlag)} {playerFlag.toUpperCase()} vs{" "}
+              {flagEmoji(enemyFlag)} {enemyFlag.toUpperCase()}
             </span>
           )}
         </div>

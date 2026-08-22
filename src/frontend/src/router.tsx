@@ -1,5 +1,6 @@
 import { ComingSoon } from "@/components/ComingSoon";
 import { Layout } from "@/components/Layout";
+import { ChangeTheGamePage } from "@/pages/ChangeTheGamePage";
 import { FlightLogDetailPage } from "@/pages/FlightLogDetailPage";
 import { FlightLogsPage } from "@/pages/FlightLogsPage";
 import { FlightPlansPage } from "@/pages/FlightPlansPage";
@@ -74,6 +75,12 @@ const leaderboardRoute = createRoute({
   component: () => <LeaderboardPage />,
 });
 
+const changeTheGameRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/change-the-game",
+  component: () => <ChangeTheGamePage />,
+});
+
 // ── Catch-all → menu ──────────────────────────────────────────────────────
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -92,6 +99,7 @@ const routeTree = rootRoute.addChildren([
   flightLogDetailRoute,
   flightSchoolRoute,
   leaderboardRoute,
+  changeTheGameRoute,
   notFoundRoute,
 ]);
 
