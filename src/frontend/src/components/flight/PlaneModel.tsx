@@ -278,17 +278,31 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
               <>
                 <FlagDecal
                   code={playerFlag}
-                  width={0.85}
-                  height={0.5}
-                  position={[2.15, 0.12, -0.15]}
+                  width={2.15}
+                  height={1.25}
+                  position={[2.85, 0.18, 0.05]}
                   rotation={[-Math.PI / 2, 0, 0]}
                 />
                 <FlagDecal
                   code={playerFlag}
-                  width={0.85}
-                  height={0.5}
-                  position={[-2.15, 0.12, -0.15]}
-                  rotation={[-Math.PI / 2, 0, Math.PI]}
+                  width={2.15}
+                  height={1.25}
+                  position={[-2.85, 0.18, 0.05]}
+                  rotation={[-Math.PI / 2, 0, 0]}
+                />
+                <FlagDecal
+                  code={playerFlag}
+                  width={2.15}
+                  height={1.25}
+                  position={[2.85, -0.12, 0.05]}
+                  rotation={[Math.PI / 2, 0, 0]}
+                />
+                <FlagDecal
+                  code={playerFlag}
+                  width={2.15}
+                  height={1.25}
+                  position={[-2.85, -0.12, 0.05]}
+                  rotation={[Math.PI / 2, 0, 0]}
                 />
               </>
             )}
@@ -364,6 +378,24 @@ export const PlaneModel = forwardRef<THREE.Group, PlaneModelProps>(
                 roughness={0.42}
               />
             </mesh>
+            {!cockpitView && (
+              <>
+                <FlagDecal
+                  code={playerFlag}
+                  width={0.95}
+                  height={0.62}
+                  position={[0.08, 0.72, -0.15]}
+                  rotation={[0, Math.PI / 2, 0]}
+                />
+                <FlagDecal
+                  code={playerFlag}
+                  width={0.95}
+                  height={0.62}
+                  position={[-0.08, 0.72, -0.15]}
+                  rotation={[0, -Math.PI / 2, 0]}
+                />
+              </>
+            )}
           </group>
 
           <group ref={exhaustRef} visible={false}>

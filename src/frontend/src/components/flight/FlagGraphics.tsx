@@ -1,17 +1,9 @@
-import { flagEmoji } from "@/lib/countries";
+import { paintFlag } from "@/lib/flagPaint";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
 const textureCache = new Map<string, THREE.CanvasTexture>();
-
-function hashHue(code: string): number {
-  let h = 0;
-  for (let i = 0; i < code.length; i++) {
-    h = (h * 33 + code.charCodeAt(i)) % 360;
-  }
-  return h;
-}
 
 export function getFlagTexture(code: string): THREE.CanvasTexture {
   const key = code.trim().toLowerCase() || "us";
@@ -19,26 +11,14 @@ export function getFlagTexture(code: string): THREE.CanvasTexture {
   if (hit) return hit;
   const canvas = document.createElement("canvas");
   canvas.width = 256;
-  canvas.height = 160;
+  canvas.height = 170;
   const ctx = canvas.getContext("2d");
   if (ctx) {
-    const hue = hashHue(key);
-    ctx.fillStyle = `hsl(${hue} 44% 30%)`;
-    ctx.fillRect(0, 0, 256, 160);
-    ctx.fillStyle = `hsl(${hue} 52% 18%)`;
-    ctx.fillRect(0, 0, 256, 16);
-    ctx.fillRect(0, 144, 256, 16);
-    ctx.font = "92px serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(flagEmoji(key), 128, 70);
-    ctx.font = "bold 20px sans-serif";
-    ctx.fillStyle = "#f3f1ea";
-    ctx.fillText(key.toUpperCase(), 128, 136);
+    paintFlag(ctx, 256, 170, key);
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   tex.needsUpdate = true;
   textureCache.set(key, tex);
   return tex;
@@ -66,57 +46,72 @@ export function FlagDecal({
 }) {
   const tex = useFlagTexture(code);
   return (
-    <mesh position={position} rotation={rotation} scale={scale}>
+    <mesh position={position} rotation={rotation} scale={scale} renderOrder={2}>
       <planeGeometry args={[width, height]} />
-      <meshStandardMaterial
+      <meshBasicMaterial
         map={tex}
-        roughness={0.52}
-        metalness={0.08}
         side={THREE.DoubleSide}
+        toneMapped={false}
+        polygonOffset
+        polygonOffsetFactor={-4}
+        polygonOffsetUnits={-4}
       />
     </mesh>
   );
 }
 
-/** Cloth on a pole. Used at friendly fields and hostile bases. */
+/** Cloth on a pole. Hoist sits on the shaft so the flag flies outward. */
 export function FlagPole({
   code,
   height = 8,
+  clothWidth,
+  clothHeight,
   poleScale = 1,
 }: {
   code: string;
   height?: number;
+  clothWidth?: number;
+  clothHeight?: number;
   poleScale?: number;
 }) {
   const tex = useFlagTexture(code);
-  const cloth = useRef<THREE.Mesh>(null);
+  const fly = useRef<THREE.Group>(null);
+  const clothW = clothWidth ?? Math.max(4.2, height * 0.72);
+  const clothH = clothHeight ?? clothW * 0.62;
   useFrame((state) => {
-    if (!cloth.current) return;
-    cloth.current.rotation.y = Math.sin(state.clock.elapsedTime * 1.7) * 0.14;
+    if (!fly.current) return;
+    fly.current.rotation.y = Math.sin(state.clock.elapsedTime * 1.35) * 0.18;
   });
   return (
     <group scale={poleScale}>
       <mesh position={[0, height / 2, 0]} castShadow>
-        <cylinderGeometry args={[0.05, 0.07, height, 6]} />
+        <cylinderGeometry args={[height * 0.012, height * 0.018, height, 8]} />
         <meshStandardMaterial
-          color="#8a9298"
+          color="#c5ccd3"
           metalness={0.55}
-          roughness={0.35}
+          roughness={0.32}
         />
       </mesh>
-      <mesh position={[0, height + 0.08, 0]}>
-        <sphereGeometry args={[0.09, 8, 8]} />
-        <meshStandardMaterial color="#c4a24a" metalness={0.6} roughness={0.3} />
-      </mesh>
-      <mesh ref={cloth} position={[0.85, height - 0.55, 0]}>
-        <planeGeometry args={[1.7, 1.05]} />
+      <mesh position={[0, height + height * 0.018, 0]}>
+        <sphereGeometry args={[height * 0.022, 8, 8]} />
         <meshStandardMaterial
-          map={tex}
-          side={THREE.DoubleSide}
-          roughness={0.48}
-          metalness={0.05}
+          color="#e2c15a"
+          metalness={0.65}
+          roughness={0.28}
         />
       </mesh>
+      <group position={[0, height - clothH * 0.52, 0]}>
+        <group ref={fly}>
+          <mesh position={[clothW / 2, 0, 0]} renderOrder={3}>
+            <planeGeometry args={[clothW, clothH]} />
+            <meshBasicMaterial
+              map={tex}
+              side={THREE.DoubleSide}
+              toneMapped={false}
+            />
+          </mesh>
+        </group>
+      </group>
     </group>
   );
 }

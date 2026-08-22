@@ -564,8 +564,13 @@ export function AirportBuildings({
   return (
     <group position={[apron.x, 0, apron.z]} rotation={[0, apron.heading, 0]}>
       <ControlTower night={night} />
-      <group position={[5.2, 0, -6.5]}>
-        <FlagPole code={playerFlag} height={9.5} />
+      <group position={[22, 0, -14]}>
+        <FlagPole
+          code={playerFlag}
+          height={28}
+          clothWidth={18}
+          clothHeight={11}
+        />
       </group>
       <Hangar
         position={[-16, 0, 6]}
@@ -604,8 +609,13 @@ export function DestinationAirport({
   const apron = apronBeside(layout.landingThreshold, layout.landingEnd, 42);
   return (
     <group position={[apron.x, 0, apron.z]} rotation={[0, apron.heading, 0]}>
-      <group position={[-8, 0, -2]}>
-        <FlagPole code={playerFlag} height={8.5} />
+      <group position={[-18, 0, -10]}>
+        <FlagPole
+          code={playerFlag}
+          height={24}
+          clothWidth={16}
+          clothHeight={10}
+        />
       </group>
       <Hangar
         position={[0, 0, 8]}

@@ -26,8 +26,20 @@ export function CombatField({
           layout={layout}
           sectorIndex={i}
           flightState={flightState}
-          enemyFlag={enemyFlag}
         />
+      ))}
+      {layout.sectors.map((sector) => (
+        <group
+          key={`base-flag-${sector.id}`}
+          position={[sector.center.x + 22, 0, sector.center.z + 16]}
+        >
+          <FlagPole
+            code={enemyFlag}
+            height={30}
+            clothWidth={20}
+            clothHeight={12}
+          />
+        </group>
       ))}
       <TargetMeshes flightState={flightState} />
       <EnemyAircraftMeshes flightState={flightState} enemyFlag={enemyFlag} />
@@ -55,12 +67,10 @@ function SectorMarker({
   layout,
   sectorIndex,
   flightState,
-  enemyFlag,
 }: {
   layout: SceneLayout;
   sectorIndex: number;
   flightState: React.MutableRefObject<FlightState>;
-  enemyFlag: string;
 }) {
   const ref = useRef<THREE.Group>(null);
   const sector = layout.sectors[sectorIndex];
@@ -103,9 +113,6 @@ function SectorMarker({
         <cylinderGeometry args={[0.28, 0.4, 44, 8]} />
         <meshBasicMaterial color="#ff8a20" transparent opacity={0.42} />
       </mesh>
-      <group position={[12, -0.2, 10]}>
-        <FlagPole code={enemyFlag} height={10} />
-      </group>
       <Html
         position={[0, 32, 0]}
         center
@@ -356,17 +363,24 @@ function EnemyJetMesh({ enemyFlag }: { enemyFlag: string }) {
       </mesh>
       <FlagDecal
         code={enemyFlag}
-        width={0.7}
-        height={0.4}
-        position={[1.85, 0.08, 0.05]}
+        width={1.7}
+        height={1.0}
+        position={[2.15, 0.12, 0.05]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      />
+      <FlagDecal
+        code={enemyFlag}
+        width={1.7}
+        height={1.0}
+        position={[-2.15, 0.12, 0.05]}
         rotation={[-Math.PI / 2, 0, 0]}
       />
       <FlagDecal
         code={enemyFlag}
         width={0.7}
-        height={0.4}
-        position={[-1.85, 0.08, 0.05]}
-        rotation={[-Math.PI / 2, 0, Math.PI]}
+        height={0.45}
+        position={[0.08, 0.55, 1.2]}
+        rotation={[0, Math.PI / 2, 0]}
       />
       <mesh position={[0, 0.48, 1.35]} castShadow>
         <boxGeometry args={[0.08, 1.05, 0.85]} />
