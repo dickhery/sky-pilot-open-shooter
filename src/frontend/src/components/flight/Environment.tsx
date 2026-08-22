@@ -4,6 +4,10 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
+/** Local copy of drei's default cloud billboard. The Clouds default URL
+ *  (rawcdn.githack.com) is blocked by the asset-canister CSP. */
+const CLOUD_TEXTURE = "/assets/images/cloud.png";
+
 interface EnvironmentProps {
   weather: Weather;
 }
@@ -166,7 +170,11 @@ export function Environment({ weather }: EnvironmentProps) {
       )}
 
       {weather === "Daytime" && (
-        <Clouds material={THREE.MeshLambertMaterial} limit={24}>
+        <Clouds
+          material={THREE.MeshLambertMaterial}
+          texture={CLOUD_TEXTURE}
+          limit={24}
+        >
           <Cloud
             seed={4}
             segments={16}
@@ -189,7 +197,11 @@ export function Environment({ weather }: EnvironmentProps) {
       )}
 
       {weather === "PartlyCloudy" && (
-        <Clouds material={THREE.MeshLambertMaterial} limit={36}>
+        <Clouds
+          material={THREE.MeshLambertMaterial}
+          texture={CLOUD_TEXTURE}
+          limit={36}
+        >
           <Cloud
             seed={7}
             segments={22}
